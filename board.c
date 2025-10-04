@@ -609,7 +609,7 @@ void BOARD_gMR_LoadChannels() {
 	{
 		freq_buf = BOARD_fetchChannelFrequency(i);
 
-		gMR_ChannelFrequencyAttributes[i].Frequency = RX_freq_check(freq_buf) == 0XFFFF ? 0 : freq_buf;
+		gMR_ChannelFrequencyAttributes[i].Frequency = RX_freq_check(freq_buf) == 0XFF ? 0 : freq_buf;
 		SETTINGS_FetchChannelName(gMR_ChannelFrequencyAttributes[i].Name, i);
 	}
 }

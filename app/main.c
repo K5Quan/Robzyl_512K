@@ -348,7 +348,7 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 			{	// step/down in frequency
 				const uint32_t frequency = APP_SetFrequencyByStep(gTxVfo, Direction);
 
-				if (RX_freq_check(frequency) < 0)
+				if (RX_freq_check(frequency) == 0xFF)
 				{	// frequency not allowed
 					return;
 				}

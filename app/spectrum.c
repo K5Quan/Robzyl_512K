@@ -166,7 +166,7 @@ static uint8_t nextBandToScanIndex = 0;
 uint8_t menuState = 0;
 
 #ifdef ENABLE_SCANLIST_SHOW_DETAIL
-  static uint16_t scanListChannels[1000]; // Array to store Channel indices for selected scanlist
+  static uint16_t scanListChannels[MR_CHANNEL_LAST]; // Array to store Channel indices for selected scanlist
   static uint16_t scanListChannelsCount = 0; // Number of Channels in selected scanlist
   static uint16_t scanListChannelsSelectedIndex = 0;
   static uint16_t scanListChannelsScrollOffset = 0;
