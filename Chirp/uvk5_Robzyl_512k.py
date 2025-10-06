@@ -34,33 +34,7 @@ struct {
 u8 scanlist:4,
 is_free:1,
 band:3;
-} ch_attr[500];
-
-#seekto 0x2000;
-struct {
-  ul32 freq;
-  ul32 offset;
-  u8 rxcode;
-  u8 txcode;
-  u8 txcodeflag:4,
-  rxcodeflag:4;
-  u8 modulation:4,
-  offsetDir:4;
-  u8 __UNUSED1:1,
-  bandwidth_ext:2,
-  busyChLockout:1,
-  txpower:2,
-  bandwidth:1,
-  freq_reverse:1;
-  u8 __UNUSED2;
-  u8 step;
-  u8 scrambler;
-} channel[514];
-
-#seekto 0x5E80;
-struct {
-char name[16];
-} channelname[500];
+} ch_attr[1000];
 
 #seekto 0xe40;
 ul16 fmfreq[20];
@@ -251,6 +225,32 @@ struct {
     u8 dacGain;
 } cal;
 
+#seekto 0x2000;
+struct {
+  ul32 freq;
+  ul32 offset;
+  u8 rxcode;
+  u8 txcode;
+  u8 txcodeflag:4,
+  rxcodeflag:4;
+  u8 modulation:4,
+  offsetDir:4;
+  u8 __UNUSED1:1,
+  bandwidth_ext:2,
+  busyChLockout:1,
+  txpower:2,
+  bandwidth:1,
+  freq_reverse:1;
+  u8 __UNUSED2;
+  u8 step;
+  u8 scrambler;
+} channel[1000];
+
+#seekto 0x5E80;
+struct {
+char name[16];
+} channelname[1000];
+
 """
 
 
@@ -360,8 +360,8 @@ REMENDOFTALK_LIST = ["OFF", "Morse", "Mario"]
 RTE_LIST = ["OFF", "100ms", "200ms", "300ms", "400ms",
             "500ms", "600ms", "700ms", "800ms", "900ms", "1000ms"]
 
-MEM_SIZE = 0x7FFF  # size of all memory
-PROG_SIZE = 0x7FFF  # size of the memory that we will write
+MEM_SIZE = 0x9FFF  # size of all memory
+PROG_SIZE = 0x9FFF  # size of the memory that we will write
 MEM_BLOCK = 0x80  # largest block of memory that we can reliably write
 BANDS_WIDE = {
         0: [ 18.0, 620.0],
@@ -658,13 +658,14 @@ class UVK5Radio(chirp_common.CloneModeRadio):
     BAUD_RATE = 38400
     NEEDS_COMPAT_SERIAL = False
     FIRMWARE_VERSION = ""
+    
     def _find_band(self, hz):
         mhz = hz/1000000.0
         bands = BANDS_WIDE 
         for bnd, rng in bands.items():
             if rng[0] <= mhz <= rng[1]:
                 return bnd
-        return False
+        return True
 
     @classmethod
     def get_prompts(cls):
@@ -720,7 +721,17 @@ class UVK5Radio(chirp_common.CloneModeRadio):
 
         rf.valid_skips = [""]
 
-        rf.memory_bounds = (1, 500)
+        rf.memory_bounds = (1, 1000)
+        # This is what the BK4819 chip supports
+        # Will leave it in a comment, might be useful someday
+        rf.valid_bands = [(18000000,  620000000),
+                          (840000000, 1300000000)
+                         ]
+        rf.valid_bands = []
+        bands = BANDS_WIDE
+        for _, rng in bands.items():
+            rf.valid_bands.append(
+                    (int(rng[0]*1000000), int(rng[1]*1000000)))
         return rf
 
     # Do a download of the radio from the serial port
@@ -866,7 +877,7 @@ class UVK5Radio(chirp_common.CloneModeRadio):
         # We'll also look at the channel attributes if a memory has them
         tmpscn = SCANLIST_LIST[0]
 
-        if ch_num < 500:
+        if ch_num < 1000:
             _mem3 = self._memobj.ch_attr[ch_num]
             # free memory bit
             if _mem3.is_free:
@@ -999,13 +1010,8 @@ class UVK5Radio(chirp_common.CloneModeRadio):
         mem.extra.append(rs)
 
         # Scanlist
-        try:
-            scanlist_idx = int(getattr(_mem, "scanlist", 0) or 0)
-        except (ValueError, TypeError):
-            scanlist_idx = 0
-
-        val = RadioSettingValueList(SCANLIST_LIST, current_index=scanlist_idx)
-        rs = RadioSetting("scanlist", "Scanlist", val)
+        val = RadioSettingValueList(SCANLIST_LIST, tmpscn)
+        rs = RadioSetting("scanlist", "Scanlist (SList)", val)
         mem.extra.append(rs)
 
         return mem
@@ -1426,22 +1432,21 @@ class UVK5Radio(chirp_common.CloneModeRadio):
 
         # Get a low-level memory object mapped to the image
         _mem = self._memobj.channel[number]
-        _mem4 = self._memobj
+        _mem4 = self._memobj.ch_attr[number]
         # empty memory
         if memory.empty:
             _mem.set_raw("\xFF" * 16)
-            if number < 500:
-                _mem2 = self._memobj.channelname[number]
-                _mem2.set_raw("\xFF" * 16)
-                _mem4.ch_attr[number].scanlist = 0
-                _mem4.ch_attr[number].is_free = 1
-                _mem4.ch_attr[number].band = 0x7
+            _mem2 = self._memobj.channelname[number]
+            _mem2.set_raw("\xFF" * 16)
+            _mem4.scanlist = 0
+            _mem4.is_free = 1
+            _mem4.band = 0x7
             return memory
 
-        if number < 500:
-            _mem4.ch_attr[number].scanlist = 0
-            _mem4.ch_attr[number].is_free = 1
-            _mem4.ch_attr[number].band = 0x7
+        
+        _mem4.scanlist = 0
+        _mem4.is_free = 1
+        _mem4.band = 0x7
 
         # mode ["FM", "NFM", "AM", "NAM", "AIR", "USB"]
         # 0 = FM, 1 = AM, 2 = USB
@@ -1482,16 +1487,14 @@ class UVK5Radio(chirp_common.CloneModeRadio):
             _mem.offsetDir = FLAGS1_OFFSET_MINUS
             _mem.offset = _mem.freq
         # set band
-        if number < 500:
-            _mem4.ch_attr[number].is_free = 0
-            band = self._find_band(_mem.freq)
-            _mem4.ch_attr[number].band = band
+        
+        _mem4.is_free = 0
+        band = self._find_band(_mem.freq)
+        _mem4.band = band
 
-        # channels >500 are the 14 VFO chanells and don't have names
-        if number < 500:
-            _mem2 = self._memobj.channelname[number]
-            tag = memory.name.ljust(10) + "\x00"*6
-            _mem2.name = tag  # Store the alpha tag
+        _mem2 = self._memobj.channelname[number]
+        tag = memory.name.ljust(10) + "\x00"*6
+        _mem2.name = tag  # Store the alpha tag
 
         # tone data
         self._set_tone(memory, _mem)
@@ -1508,8 +1511,6 @@ class UVK5Radio(chirp_common.CloneModeRadio):
             _mem.txpower = POWER_LOW
 
 
-
-
         ######### EXTRA SETTINGS
 
         def get_setting(name, def_val):
@@ -1520,8 +1521,7 @@ class UVK5Radio(chirp_common.CloneModeRadio):
         _mem.busyChLockout = get_setting("busyChLockout", False)
         _mem.freq_reverse = get_setting("frev", False)
         _mem.scrambler = get_setting("scrambler", 0)
-        if number < 500:
-            tmp_val = get_setting("scanlist", 0)
-            _mem4.ch_attr[number].scanlist = tmp_val
+        tmp_val = get_setting("scanlist", 0)
+        _mem4.scanlist = tmp_val
 
         return memory
