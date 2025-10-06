@@ -696,7 +696,8 @@ void BOARD_FactoryReset()
 	uint16_t i;
 	uint8_t  Template[8];
 	memset(Template, 0xFF, sizeof(Template));
-
-	for (i = 0x0000; i < 0x7FFF; i += 8) EEPROM_WriteBuffer(i, Template);
+	//Don't erase Calibration
+	for (i = 0x0000; i < 0x1E00; i += 8) EEPROM_WriteBuffer(i, Template);
+	for (i = 0x2000; i < 0x9FFF; i += 8) EEPROM_WriteBuffer(i, Template);
 
 }
