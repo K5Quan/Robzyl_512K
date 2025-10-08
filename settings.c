@@ -36,9 +36,12 @@ void SETTINGS_SaveVfoIndices(void)
 
 	EEPROM_ReadBuffer(0x0E80, State, sizeof(State));
 
-	State[0] = gEeprom.ScreenChannel;
-	State[1] = gEeprom.MrChannel;
-	State[2] = gEeprom.FreqChannel;
+	State[0] = gEeprom.ScreenChannel[0];
+	State[1] = gEeprom.MrChannel[0];
+	State[2] = gEeprom.FreqChannel[0];
+	State[3] = gEeprom.ScreenChannel[1];
+	State[4] = gEeprom.MrChannel[1];
+	State[5] = gEeprom.FreqChannel[1];
 	EEPROM_WriteBuffer(0x0E80, State);
 }
 
@@ -46,9 +49,12 @@ void SETTINGS_SaveSettings(void)
 {
 	uint8_t  State[8];
 
+	State[0] = gEeprom.CHAN_1_CALL;
 	State[1] = gEeprom.SQUELCH_LEVEL;
 	State[2] = gEeprom.TX_TIMEOUT_TIMER;
-	State[3] = false;
+
+		State[3] = false;
+
 	State[4] = gEeprom.KEY_LOCK;
 	State[5] = false;
 	State[6] = 0;
@@ -98,6 +104,22 @@ void SETTINGS_SaveSettings(void)
 	State[4] = gEeprom.BATTERY_TYPE;
 	State[5] = gEeprom.SQL_TONE;
 	EEPROM_WriteBuffer(0x0EA8, State);
+
+	
+
+
+	EEPROM_WriteBuffer(0x0ED8, State);
+
+	State[0] = gEeprom.SCAN_LIST_DEFAULT;
+	State[1] = gEeprom.SCAN_LIST_ENABLED[0];
+	State[2] = gEeprom.SCANLIST_PRIORITY_CH1[0];
+	State[3] = gEeprom.SCANLIST_PRIORITY_CH2[0];
+	State[4] = gEeprom.SCAN_LIST_ENABLED[1];
+	State[5] = gEeprom.SCANLIST_PRIORITY_CH1[1];
+	State[6] = gEeprom.SCANLIST_PRIORITY_CH2[1];
+	State[7] = 0xFF;
+	EEPROM_WriteBuffer(0x0F18, State);
+
 	memset(State, 0xFF, sizeof(State));
 	State[0]  = gSetting_F_LOCK;
 	State[6]  = gSetting_ScrambleEnable;
@@ -114,11 +136,11 @@ void SETTINGS_SaveSettings(void)
 
 }
 
-void SETTINGS_SaveChannel(uint16_t Channel, const VFO_Info_t *pVFO, uint8_t Mode)
+void SETTINGS_SaveChannel(uint8_t Channel, const VFO_Info_t *pVFO, uint8_t Mode)
 {
 
 	{
-		uint16_t OffsetVFO = 0x2000 + Channel * 16;
+		uint16_t OffsetVFO = Channel * 16;
 
 		if (!IS_MR_CHANNEL(Channel))
 		{	// it's a VFO, not a Channel
@@ -162,6 +184,7 @@ void SETTINGS_SaveChannel(uint16_t Channel, const VFO_Info_t *pVFO, uint8_t Mode
 				#else
 					if (Mode >= 3) {
 						SETTINGS_SaveChannelName(Channel, pVFO->Name);
+
 						#ifdef ENABLE_SPECTRUM_SHOW_CHANNEL_NAME
 							//update Channel names stored in memory
 							BOARD_gMR_LoadChannels();
@@ -173,7 +196,6 @@ void SETTINGS_SaveChannel(uint16_t Channel, const VFO_Info_t *pVFO, uint8_t Mode
 	}
 }
 
-
 void SETTINGS_SaveBatteryCalibration(const uint16_t * batteryCalibration)
 {
 	uint16_t buf[4];
@@ -184,18 +206,18 @@ void SETTINGS_SaveBatteryCalibration(const uint16_t * batteryCalibration)
 	EEPROM_WriteBuffer(0x1F48, buf);
 }
 
-void SETTINGS_SaveChannelName(uint16_t Channel, const char * name)
+void SETTINGS_SaveChannelName(uint8_t Channel, const char * name)
 {
 	uint16_t offset = Channel * 16;
 	uint8_t  buf[16];
 	memset(&buf, 0x00, sizeof(buf));
 	memcpy(buf, name, MIN(strlen(name),10u));
-	EEPROM_WriteBuffer(0x2C80 + offset, buf); //1000 Channels
-	EEPROM_WriteBuffer(0x2C88 + offset, buf + 8);
+	EEPROM_WriteBuffer(0x0F50 + offset, buf);
+	EEPROM_WriteBuffer(0x0F58 + offset, buf + 8);
 }
 
 
-void SETTINGS_FetchChannelName(char *s, const uint16_t Channel)
+void SETTINGS_FetchChannelName(char *s, const int Channel)
 {
 	int i;
 
@@ -204,14 +226,15 @@ void SETTINGS_FetchChannelName(char *s, const uint16_t Channel)
 
 	memset(s, 0, 11);  // 's' had better be large enough !
 
-	if (Channel == 0xFFFF)
+	if (Channel < 0)
 		return;
 
-	if (!RADIO_CheckValidChannel(Channel)) return;
+	if (!RADIO_CheckValidChannel(Channel, false, 0))
+		return;
 
 
-	EEPROM_ReadBuffer(0x2C80 + (Channel * 16), s + 0, 8);
-	EEPROM_ReadBuffer(0x2C88 + (Channel * 16), s + 8, 2);
+	EEPROM_ReadBuffer(0x0F50 + (Channel * 16), s + 0, 8);
+	EEPROM_ReadBuffer(0x0F58 + (Channel * 16), s + 8, 2);
 
 	for (i = 0; i < 10; i++)
 		if (s[i] < 32 || s[i] > 127)
@@ -223,7 +246,7 @@ void SETTINGS_FetchChannelName(char *s, const uint16_t Channel)
 		s[i--] = 0;               // null term
 }
 
-void SETTINGS_UpdateChannel(uint16_t Channel, const VFO_Info_t *pVFO, bool keep)
+void SETTINGS_UpdateChannel(uint8_t Channel, const VFO_Info_t *pVFO, bool keep)
 {
 	{
 		uint8_t  state[8];
@@ -232,7 +255,7 @@ void SETTINGS_UpdateChannel(uint16_t Channel, const VFO_Info_t *pVFO, bool keep)
 			.scanlist = 0,
 			};        // default attributes
 
-		uint16_t offset = 0x0000 + (Channel & ~7u);
+		uint16_t offset = 0x0D60 + (Channel & ~7u);
 		EEPROM_ReadBuffer(offset, state, sizeof(state));
 
 		if (keep) {
@@ -244,7 +267,9 @@ void SETTINGS_UpdateChannel(uint16_t Channel, const VFO_Info_t *pVFO, bool keep)
 
 		state[Channel & 7u] = att.__val;
 		EEPROM_WriteBuffer(offset, state);
+
 		gMR_ChannelAttributes[Channel] = att;
+
 		if (IS_MR_CHANNEL(Channel)) {	// it's a memory Channel
 			if (!keep) {
 				// clear/reset the Channel name
@@ -255,6 +280,8 @@ void SETTINGS_UpdateChannel(uint16_t Channel, const VFO_Info_t *pVFO, bool keep)
 }
 
 void SETTINGS_SetVfoFrequency(uint32_t frequency) {
+	const uint8_t Vfo = 0;
+	// clamp the frequency entered to some valid value
 	if (frequency < RX_freq_min())
 	{
 		frequency = RX_freq_min();
@@ -277,12 +304,12 @@ void SETTINGS_SetVfoFrequency(uint32_t frequency) {
 		if (gTxVfo->Band != band)
 		{
 			gTxVfo->Band               = band;
-			gEeprom.ScreenChannel = band + FREQ_CHANNEL_FIRST;
-			gEeprom.FreqChannel   = band + FREQ_CHANNEL_FIRST;
+			gEeprom.ScreenChannel[Vfo] = band + FREQ_CHANNEL_FIRST;
+			gEeprom.FreqChannel[Vfo]   = band + FREQ_CHANNEL_FIRST;
 
 			SETTINGS_SaveVfoIndices();
 
-			RADIO_ConfigureChannel(VFO_CONFIGURE_RELOAD);
+			RADIO_ConfigureChannel(Vfo, VFO_CONFIGURE_RELOAD);
 		}
 
 		// Autoset stepFrequency based on step setting

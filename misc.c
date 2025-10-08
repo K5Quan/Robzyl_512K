@@ -133,7 +133,7 @@ bool              gFlagReconfigureVfos;
 uint8_t           gVfoConfigureMode;
 bool              gFlagResetVfos;
 bool              gRequestSaveVFO;
-uint16_t           gRequestSaveChannel;
+uint8_t           gRequestSaveChannel;
 bool              gRequestSaveSettings;
 bool              gFlagPrepareTX;
 
@@ -153,7 +153,7 @@ uint8_t           gFlashLightState;
 bool			  Ptt_Toggle_Mode = false;
 volatile uint16_t gFlashLightBlinkCounter;
 bool              gFlagEndTransmission;
-uint16_t           gNextMrChannel;
+uint8_t           gNextMrChannel;
 ReceptionMode_t   gRxReceptionMode;
 
 bool              gTxVfoIsActive;
@@ -182,7 +182,7 @@ volatile bool gScheduleFM;
 
 volatile uint8_t  boot_counter_10ms;
 
-int16_t           gCurrentRSSI = 0;  // now one per VFO
+int16_t           gCurrentRSSI[2] = {0, 0};  // now one per VFO
 
 uint8_t           gIsLocked = 0xFF;
 

@@ -1,7 +1,7 @@
 #include "app/spectrum.h"
 #include "scanner.h"
 #include "driver/backlight.h"
-#include "driver/eeprom.h"
+#include "driver/eeprom.h"   // EEPROM_ReadBuffer()
 
 #include "ui/helper.h"
 #include "common.h"
@@ -94,8 +94,10 @@ uint8_t refresh = 0;
 Mode appMode;
 #define UHF_NOISE_FLOOR 20
 
-uint16_t scanChannel[MR_CHANNEL_LAST + 3];
+uint8_t scanChannel[MR_CHANNEL_LAST + 3];
 uint8_t ScanListNumber[MR_CHANNEL_LAST + 3];
+
+//uint8_t scanChannel[MR_CHANNEL_LAST+3];
 uint8_t scanChannelsCount;
 void ToggleScanList();
 static void LoadSettings();
@@ -164,11 +166,11 @@ static uint8_t nextBandToScanIndex = 0;
 uint8_t menuState = 0;
 
 #ifdef ENABLE_SCANLIST_SHOW_DETAIL
-  static uint16_t scanListChannels[MR_CHANNEL_LAST]; // Array to store Channel indices for selected scanlist
-  static uint16_t scanListChannelsCount = 0; // Number of Channels in selected scanlist
-  static uint16_t scanListChannelsSelectedIndex = 0;
-  static uint16_t scanListChannelsScrollOffset = 0;
-  static uint16_t selectedScanListIndex = 0; // Which scanlist we're viewing Channels for
+  static uint8_t scanListChannels[200]; // Array to store Channel indices for selected scanlist
+  static uint8_t scanListChannelsCount = 0; // Number of Channels in selected scanlist
+  static uint8_t scanListChannelsSelectedIndex = 0;
+  static uint8_t scanListChannelsScrollOffset = 0;
+  static uint8_t selectedScanListIndex = 0; // Which scanlist we're viewing Channels for
   static void BuildScanListChannels(uint8_t scanListIndex);
   static void RenderScanListChannels();
   static void RenderScanListChannelsDoubleLines(const char* title, uint8_t numItems, uint8_t selectedIndex, uint8_t scrollOffset);
@@ -507,7 +509,7 @@ if (historyListActive == true){
       if (PttEmission ==1){
           uint16_t randomChannel = GetRandomChannelFromRSSI(scanChannelsCount);
           static uint32_t rndfreq;
-          uint16_t i = 0;
+          uint8_t i = 0;
           SpectrumDelay = 0; //not compatible with ninja
 
           while (rssiHistory[randomChannel]> 120) //check Channel availability
@@ -517,8 +519,11 @@ if (historyListActive == true){
             if (i > MR_CHANNEL_LAST) break;}
           rndfreq = gMR_ChannelFrequencyAttributes[scanChannel[randomChannel]].Frequency;
           SETTINGS_SetVfoFrequency(rndfreq);
-          gEeprom.MrChannel     = scanChannel[randomChannel];
-			    gEeprom.ScreenChannel = scanChannel[randomChannel];
+          //SETTINGS_UpdateChannel(scanChannel[randomChannel],gTxVfo,1);
+          gEeprom.MrChannel[0]     = scanChannel[randomChannel];
+			    gEeprom.ScreenChannel[0] = scanChannel[randomChannel];
+          //gVfoConfigureMode = VFO_CONFIGURE;
+	        //gFlagResetVfos    = true;
           gTxVfo->Modulation = MODULATION_FM;
           gTxVfo->STEP_SETTING = STEP_0_01kHz;
           gRequestSaveChannel = 1;
@@ -528,6 +533,8 @@ if (historyListActive == true){
           SpectrumDelay = 0; //not compatible
           SETTINGS_SetVfoFrequency(HFreqs[historyListIndex]);
           COMMON_SwitchToVFOMode();
+          //gVfoConfigureMode = VFO_CONFIGURE;
+	        //gFlagResetVfos    = true;
           gTxVfo->Modulation = MODULATION_FM;
           gTxVfo->STEP_SETTING = STEP_0_01kHz;
           gTxVfo->OUTPUT_POWER = OUTPUT_POWER_HIGH;
@@ -1133,11 +1140,12 @@ switch(SpectrumMonitor) {
   }
 }
 
-static void formatHistory(char *buf, uint16_t index, uint16_t Channel, uint32_t freq) {
+static void formatHistory(char *buf, uint8_t index, int Channel, uint32_t freq) {
     char freqStr[16];
     snprintf(freqStr, sizeof(freqStr), "%u.%05u", freq/100000, freq%100000);
     RemoveTrailZeros(freqStr);
-    if(Channel != 0xFFFF) {
+
+    if(Channel != -1) {
         snprintf(buf, 19, "%s(%u)", 
                 gMR_ChannelFrequencyAttributes[Channel].Name,
                 HCount[index]);
@@ -1305,7 +1313,7 @@ void LookupChannelInfo() {
 
 void LookupChannelModulation() {
 	  uint16_t base;
-		base = 0x2000 + Channel * 16;
+		base = Channel * 16;
 
 		uint8_t tmp;
 		uint8_t data[8];
@@ -2425,16 +2433,16 @@ void LoadValidMemoryChannels(void)
       if (CurrentScanList > 15 && listsEnabled)
         break;
 
-      uint16_t offset = scanChannelsCount;
-      uint16_t listChannelsCount = RADIO_ValidMemoryChannelsCount();
+      uint8_t offset = scanChannelsCount;
+      uint8_t listChannelsCount = RADIO_ValidMemoryChannelsCount(listsEnabled, CurrentScanList-1);
       scanChannelsCount += listChannelsCount;
-      uint16_t ChannelIndex = 0xFFFF;
-      for(uint16_t i=0; i < listChannelsCount; i++)
+      signed int ChannelIndex=-1;
+      for(int i=0; i < listChannelsCount; i++)
       {
-        uint16_t nextChannel;
-        nextChannel = RADIO_FindNextChannel((ChannelIndex)+1, 1);
+        int nextChannel;
+        nextChannel = RADIO_FindNextChannel((ChannelIndex)+1, 1, listsEnabled, CurrentScanList-1);
 
-        if (nextChannel == 0xFFFF)
+        if (nextChannel == 0xFF)
         {	// no valid Channel found
           break;
         }
@@ -2585,19 +2593,20 @@ static void ClearSettings()
 
 static bool GetScanListLabel(uint8_t scanListIndex, char* bufferOut) {
     ChannelAttributes_t att;
-    char Channel_name[12];
-    uint16_t first_Channel = 0XFFFF;
-    uint16_t Channel_count = 0;
+    char Channel_name[10];
+    int first_Channel = -1;
+    int Channel_count = 0;
 
     for (int i = 0; i < MR_CHANNEL_LAST; i++) {
       att = gMR_ChannelAttributes[i];
         if (att.scanlist == scanListIndex + 1) {
-            if (first_Channel == 0XFFFF)
+            if (first_Channel == -1)
                 first_Channel = i;
             Channel_count++;
         }
     }
-    if (first_Channel == 0XFFFF) return false;
+    if (first_Channel == -1)
+        return false; // Brak kanałów
 
     SETTINGS_FetchChannelName(Channel_name, first_Channel);
     if (Channel_name[0] == '\0') {
@@ -2703,8 +2712,9 @@ static void GetHistoryItemText(uint8_t index, char* buffer) {
     sprintf(freqStr, "%u.%05u", HFreqs[index] / 100000, HFreqs[index] % 100000);
     RemoveTrailZeros(freqStr);
     
-    if (Channel != 0XFFFF) {
     int Channel = BOARD_gMR_fetchChannel(HFreqs[index]);
+    
+    if (Channel != -1) {
         sprintf(buffer, "%s%s:%d", 
                 HBlacklisted[index] ? "#" : "",
                 gMR_ChannelFrequencyAttributes[Channel].Name,
@@ -2897,8 +2907,8 @@ static void RenderScanListChannelsDoubleLines(const char* title, uint8_t numItem
         uint8_t itemIndex = i + scrollOffset;
         if (itemIndex >= numItems) break;
         
-        uint16_t ChannelIndex = scanListChannels[itemIndex];
-        char Channel_name[12];
+        uint8_t ChannelIndex = scanListChannels[itemIndex];
+        char Channel_name[10];
         SETTINGS_FetchChannelName(Channel_name, ChannelIndex);
         
         uint32_t freq = gMR_ChannelFrequencyAttributes[ChannelIndex].Frequency;

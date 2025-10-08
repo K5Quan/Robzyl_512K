@@ -312,8 +312,8 @@ REMENDOFTALK_LIST = ["OFF", "Morse", "Mario"]
 RTE_LIST = ["OFF", "100ms", "200ms", "300ms", "400ms",
             "500ms", "600ms", "700ms", "800ms", "900ms", "1000ms"]
 
-MEM_SIZE = 0x38FF   # size of all memory
-PROG_SIZE = 0x38FF  # size of the memory that we will write
+MEM_SIZE = 0x1DFF   # size of all memory
+PROG_SIZE = 0x1DFF  # size of the memory that we will write
 MEM_BLOCK = 0x80    # largest block of memory that we can reliably write
 BANDS_WIDE = {
         0: [ 18.0, 620.0],

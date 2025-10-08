@@ -226,7 +226,7 @@ extern bool                  gFlagReconfigureVfos;
 extern uint8_t               gVfoConfigureMode;
 extern bool                  gFlagResetVfos;
 extern bool                  gRequestSaveVFO;
-extern uint16_t               gRequestSaveChannel;
+extern uint8_t               gRequestSaveChannel;
 extern bool                  gRequestSaveSettings;
 extern uint8_t               gKeypadLocked;
 extern bool                  gFlagPrepareTX;
@@ -248,7 +248,7 @@ extern uint8_t               gFlashLightState;
 extern bool 				 Ptt_Toggle_Mode;
 extern volatile uint16_t     gFlashLightBlinkCounter;
 extern bool                  gFlagEndTransmission;
-extern uint16_t               gNextMrChannel;
+extern uint8_t               gNextMrChannel;
 extern ReceptionMode_t       gRxReceptionMode;
 
  //TRUE when dual watch is momentarly suspended and RX_VFO is locked to either last TX or RX
@@ -273,7 +273,7 @@ extern volatile bool         gNextTimeslice_10ms;
 extern volatile bool         gFlagTailNoteEliminationComplete;
 extern volatile uint8_t      gVFOStateResumeCountdown_500ms;
 extern volatile bool     gScheduleFM;
-extern int16_t               gCurrentRSSI;   // now one per VFO
+extern int16_t               gCurrentRSSI[2];   // now one per VFO
 extern uint8_t               gIsLocked;
 extern volatile uint8_t      boot_counter_10ms;
 

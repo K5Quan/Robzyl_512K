@@ -50,6 +50,9 @@ static void MAIN_Key_STAR(bool closecall)
 
 static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 {
+	//uint8_t Band;
+	uint8_t Vfo = 0;
+
 	if (gScreenToDisplay == DISPLAY_MENU)
 	{
 		return;
@@ -70,13 +73,15 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 				if (gEeprom.VFO_OPEN && !gCssBackgroundScan)
 				{
 
-					if (IS_MR_CHANNEL(gEeprom.ScreenChannel))
+					const uint8_t vfo = 0;
+
+					if (IS_MR_CHANNEL(gEeprom.ScreenChannel[vfo]))
 					{	// copy Channel to VFO, then swap to the VFO
 
-						const uint16_t Channel = FREQ_CHANNEL_FIRST + gEeprom.VfoInfo.Band;
+						const unsigned int Channel = FREQ_CHANNEL_FIRST + gEeprom.VfoInfo[vfo].Band;
 
-						gEeprom.ScreenChannel = Channel;
-						gEeprom.VfoInfo.CHANNEL_SAVE = Channel;
+						gEeprom.ScreenChannel[vfo] = Channel;
+						gEeprom.VfoInfo[vfo].CHANNEL_SAVE = Channel;
 
 						RADIO_SelectVfos();
 						RADIO_ApplyTxOffset(gTxVfo);
@@ -118,9 +123,11 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 		case KEY_3:
 			COMMON_SwitchVFOMode();
 			break;
+
 		case KEY_4:
 			if (beep) APP_RunSpectrum(1); //Channel scan
 			break;
+
 		case KEY_5:
 			if (beep) APP_RunSpectrum(4); //basic spectrum}
 			break;
@@ -136,6 +143,16 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 		case KEY_8:
 			gTxVfo->FrequencyReverse = gTxVfo->FrequencyReverse == false;
 			gRequestSaveChannel = 1;
+			break;
+
+		case KEY_9:
+			if (RADIO_CheckValidChannel(gEeprom.CHAN_1_CALL, false, 0))
+			{
+				gEeprom.MrChannel[Vfo]     = gEeprom.CHAN_1_CALL;
+				gEeprom.ScreenChannel[Vfo] = gEeprom.CHAN_1_CALL;
+				gRequestSaveVFO            = true;
+				gVfoConfigureMode          = VFO_CONFIGURE_RELOAD;
+			}
 			break;
 
 
@@ -179,6 +196,8 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	if (!gWasFKeyPressed)
 	{	// F-key wasn't pressed
 
+		const uint8_t Vfo = 0;
+
 		gKeyInputCountdown = key_input_timeout_500ms;
 
 		INPUTBOX_Append(Key);
@@ -200,15 +219,15 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 			Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
 
-			if (!RADIO_CheckValidChannel(Channel))
+			if (!RADIO_CheckValidChannel(Channel, false, 0))
 			{
 				return;
 			}
 
-			gEeprom.MrChannel     = Channel;
-			gEeprom.ScreenChannel = Channel;
-			gRequestSaveVFO       = true;
-			gVfoConfigureMode     = VFO_CONFIGURE_RELOAD;
+			gEeprom.MrChannel[Vfo]     = (uint8_t)Channel;
+			gEeprom.ScreenChannel[Vfo] = (uint8_t)Channel;
+			gRequestSaveVFO            = true;
+			gVfoConfigureMode          = VFO_CONFIGURE_RELOAD;
 
 			return;
 		}
@@ -311,23 +330,43 @@ static void MAIN_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 
 static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 {
-	uint16_t Channel = gEeprom.ScreenChannel;
+	uint8_t Channel = gEeprom.ScreenChannel[0];
             
 	if (bKeyHeld || !bKeyPressed)
 	{
-		if (gInputBoxIndex > 0) return;
-		if (!bKeyPressed) return;
+		if (gInputBoxIndex > 0)
+			return;
+
+		if (!bKeyPressed)
+		{
+			if (!bKeyHeld)
+				return;
+
+			if (IS_FREQ_CHANNEL(Channel))
+				return;
+			return;
+		}
 	}
-	else {if (gInputBoxIndex > 0)	return;}
+	else
+	{
+		if (gInputBoxIndex > 0)
+		{
+			return;
+		}
+
+	}
 
 		{
-			uint16_t Next;
+			uint8_t Next;
 
 			if (IS_FREQ_CHANNEL(Channel))
 			{	// step/down in frequency
 				const uint32_t frequency = APP_SetFrequencyByStep(gTxVfo, Direction);
 
-				if (RX_freq_check(frequency) == 0xFF) return;
+				if (RX_freq_check(frequency) < 0)
+				{	// frequency not allowed
+					return;
+				}
 				
 				gTxVfo->freq_config_RX.Frequency = frequency;
 				BK4819_SetFrequency(frequency);
@@ -337,15 +376,15 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 				return;
 			}
 
-			Next = RADIO_FindNextChannel(Channel + Direction, Direction);
-			if (Next == 0xFFFF)
+			Next = RADIO_FindNextChannel(Channel + Direction, Direction, false, 0);
+			if (Next == 0xFF)
 				return;
 
 			if (Channel == Next)
 				return;
 
-			gEeprom.MrChannel     = Next;
-			gEeprom.ScreenChannel = Next;
+			gEeprom.MrChannel[0]     = Next;
+			gEeprom.ScreenChannel[0] = Next;
 
 
 		}

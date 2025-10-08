@@ -19,17 +19,17 @@ void COMMON_KeypadLockToggle()
 
 void COMMON_SwitchToVFOMode()
 {
-    gEeprom.ScreenChannel = gEeprom.FreqChannel;
+    gEeprom.ScreenChannel[0] = gEeprom.FreqChannel[0];
     gRequestSaveVFO     = true;
     gVfoConfigureMode   = VFO_CONFIGURE_RELOAD;
     return;
 }
 void COMMON_SwitchToChannelMode()
 {
-    uint16_t Channel = RADIO_FindNextChannel(gEeprom.MrChannel, 1);
-    if (Channel != 0xFFFF)
+    uint8_t Channel = RADIO_FindNextChannel(gEeprom.MrChannel[0], 1, false, 0);
+    if (Channel != 0xFF)
     {	// swap to Channel mode
-        gEeprom.ScreenChannel = Channel;
+        gEeprom.ScreenChannel[0] = Channel;
         gRequestSaveVFO     = true;
         gVfoConfigureMode   = VFO_CONFIGURE_RELOAD;
         return;
