@@ -34,7 +34,7 @@ struct {
 u8 scanlist:4,
 is_free:1,
 band:3;
-} ch_attr[1000];
+} ch_attr[500];
 
 #seekto 0xe70;
 u8 unused;
@@ -224,12 +224,12 @@ struct {
   u8 __UNUSED2;
   u8 step;
   u8 scrambler;
-} Channel[1000];
+} Channel[500];
 
-#seekto 0x5E80;
+#seekto 0x3F40;
 struct {
 char name[16];
-} Channelname[1000];
+} Channelname[500];
 
 """
 
@@ -337,8 +337,8 @@ REMENDOFTALK_LIST = ["OFF", "Morse", "Mario"]
 RTE_LIST = ["OFF", "100ms", "200ms", "300ms", "400ms",
             "500ms", "600ms", "700ms", "800ms", "900ms", "1000ms"]
 
-MEM_SIZE = 0x9FFF  # size of all memory
-PROG_SIZE = 0x9FFF  # size of the memory that we will write
+MEM_SIZE = 0x4400  # size of all memory
+PROG_SIZE = 0x4400  # size of the memory that we will write
 MEM_BLOCK = 0x80  # largest block of memory that we can reliably write
 BANDS_WIDE = {
         0: [ 18.0, 620.0],
@@ -691,7 +691,7 @@ class UVK5Radio(chirp_common.CloneModeRadio):
 
         rf.valid_skips = [""]
 
-        rf.memory_bounds = (1, 1000)
+        rf.memory_bounds = (1, 500)
         # This is what the BK4819 chip supports
         # Will leave it in a comment, might be useful someday
         rf.valid_bands = [(18000000,  620000000),
@@ -847,7 +847,7 @@ class UVK5Radio(chirp_common.CloneModeRadio):
         # We'll also look at the Channel attributes if a memory has them
         tmpscn = SCANLIST_LIST[0]
 
-        if ch_num < 1000:
+        if ch_num < 500:
             _mem3 = self._memobj.ch_attr[ch_num]
             # free memory bit
             if _mem3.is_free:

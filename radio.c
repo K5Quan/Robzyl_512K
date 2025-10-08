@@ -60,24 +60,10 @@ const char *bwNames[5] = {"25k", "12.5k", "8.33k", "6.25k", "5k"};
 
 bool RADIO_CheckValidChannel(uint16_t Channel)
 {	// return true if the Channel appears valid
-
-	//ChannelAttributes_t att;
-
-	if (!IS_MR_CHANNEL(Channel))
-		return false;
-/* 
+	ChannelAttributes_t att;
+	if (!IS_MR_CHANNEL(Channel)) return false;
 	att = gMR_ChannelAttributes[Channel];
-
-	if (att.band > BAND7_470MHz)
-		return false;
-
-	if (bCheckScanList) {
-		if (att.scanlist == 1)
-			return true;
-		else
-			return false;
-	}*/
-
+	if (att.band > BAND7_470MHz) return false;
 	return true;
 }
 
@@ -151,13 +137,16 @@ void RADIO_ConfigureChannel(const unsigned int configure)
 	ChannelAttributes_t att;
 	EEPROM_ReadBuffer(0x0000 + Channel, (uint8_t *)&att, sizeof(att));
 	if (IS_MR_CHANNEL(Channel)) {
-			Channel                    = gEeprom.FreqChannel;
+	ChannelAttributes_t att = gMR_ChannelAttributes[Channel];
+	if (att.__val == 0xFF) { // invalid/unused Channel
+		if (IS_MR_CHANNEL(Channel)) {
+			Channel               = gEeprom.FreqChannel;
 			gEeprom.ScreenChannel = Channel;
 		}
-
 		uint16_t bandIdx = Channel - FREQ_CHANNEL_FIRST;
 		RADIO_InitInfo(pVfo, Channel, frequencyBandTable[bandIdx].lower);
 		return;
+		}
 	
 
 	uint8_t band = att.band;
@@ -168,7 +157,7 @@ void RADIO_ConfigureChannel(const unsigned int configure)
 	if (!IS_MR_CHANNEL(Channel)) {
 		band = Channel - FREQ_CHANNEL_FIRST;
 	}
-	
+
 	pVfo->Band                    = band;
 	pVfo->SCANLIST 				  = att.scanlist;
 	pVfo->CHANNEL_SAVE            = Channel;

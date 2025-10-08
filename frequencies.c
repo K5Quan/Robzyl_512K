@@ -159,10 +159,7 @@ int TX_freq_check(const uint32_t Frequency)
 }
 
 int RX_freq_check(const uint32_t Frequency)
-{	// return '0' if RX frequency is allowed
-	// otherwise return '-1'
-
-	if (Frequency < RX_freq_min() || Frequency > frequencyBandTable[ARRAY_SIZE(frequencyBandTable) - 1].upper)
+{	if (Frequency < RX_freq_min() || Frequency > frequencyBandTable[ARRAY_SIZE(frequencyBandTable) - 1].upper)
 		return 0XFF;
 
 	if (Frequency >= BX4819_band1.upper && Frequency < BX4819_band2.lower)
