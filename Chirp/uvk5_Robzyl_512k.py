@@ -31,16 +31,37 @@ VALEUR_COMPILER = "ENABLE"
 MEM_FORMAT = """
 #seekto 0x0000;
 struct {
+  ul32 freq;
+  ul32 offset;
+  u8 rxcode;
+  u8 txcode;
+  u8 txcodeflag:4,
+  rxcodeflag:4;
+  u8 modulation:4,
+  offsetDir:4;
+  u8 __UNUSED1:1,
+  bandwidth_ext:2,
+  busyChLockout:1,
+  txpower:2,
+  bandwidth:1,
+  freq_reverse:1;
+  u8 __UNUSED2;
+  u8 step;
+  u8 scrambler;
+} Channel[200];
+
+#seekto 0xd60;
+struct {
 u8 scanlist:4,
 is_free:1,
 band:3;
-} ch_attr[500];
+} ch_attr[200];
 
 #seekto 0xe70;
-u8 unused;
+u8 unused1;
 u8 squelch;
 u8 max_talk_time;
-u8 unused;
+u8 unused2;
 u8 key_lock;
 u8 mic_gain;
 
@@ -49,7 +70,7 @@ u8 backlight_min:4,
 backlight_max:4;
 
 u8 Channel_display_mode;
-u8 unused;
+u8 unused3;
 u8 battery_save;
 u8 backlight_time;
 u8 ste;
@@ -84,31 +105,6 @@ u8 Battery_type;
 char logo_line1[16];
 char logo_line2[16];
 
-//#seekto 0xed0;
-struct {
-    u8 side_tone;
-    char separate_code;
-    char group_call_code;
-    u8 decode_response;
-    u8 auto_reset_time;
-    u8 preload_time;
-    u8 first_code_persist_time;
-    u8 hash_persist_time;
-    u8 code_persist_time;
-    u8 code_interval_time;
-    u8 permit_remote_kill;
-
-    #seekto 0xee0;
-    char local_code[3];
-    #seek 5;
-    char kill_code[5];
-    #seek 3;
-    char revive_code[5];
-    #seek 3;
-    char up_code[16];
-    char down_code[16];
-} dtmf;
-
 //#seekto 0xf18;
 u8 slDef;
 u8 sl1PriorEnab;
@@ -123,8 +119,13 @@ u8  backlight_on_TX_RX:2,
     AM_fix:1,
     mic_bar:1,
     battery_text:2,
-    unused:1,
+    unused4:1,
     unknown:1;
+
+#seekto 0xF50;
+struct {
+char name[16];
+} Channelname[200];
 
 struct {
     struct {
@@ -204,32 +205,6 @@ struct {
     u8 volumeGain;
     u8 dacGain;
 } cal;
-
-#seekto 0x2000;
-struct {
-  ul32 freq;
-  ul32 offset;
-  u8 rxcode;
-  u8 txcode;
-  u8 txcodeflag:4,
-  rxcodeflag:4;
-  u8 modulation:4,
-  offsetDir:4;
-  u8 __UNUSED1:1,
-  bandwidth_ext:2,
-  busyChLockout:1,
-  txpower:2,
-  bandwidth:1,
-  freq_reverse:1;
-  u8 __UNUSED2;
-  u8 step;
-  u8 scrambler;
-} Channel[500];
-
-#seekto 0x3F40;
-struct {
-char name[16];
-} Channelname[500];
 
 """
 
@@ -337,9 +312,9 @@ REMENDOFTALK_LIST = ["OFF", "Morse", "Mario"]
 RTE_LIST = ["OFF", "100ms", "200ms", "300ms", "400ms",
             "500ms", "600ms", "700ms", "800ms", "900ms", "1000ms"]
 
-MEM_SIZE = 0x4400  # size of all memory
-PROG_SIZE = 0x4400  # size of the memory that we will write
-MEM_BLOCK = 0x80  # largest block of memory that we can reliably write
+MEM_SIZE = 0x38FF   # size of all memory
+PROG_SIZE = 0x38FF  # size of the memory that we will write
+MEM_BLOCK = 0x80    # largest block of memory that we can reliably write
 BANDS_WIDE = {
         0: [ 18.0, 620.0],
         1: [840.0, 1300.0]
@@ -691,7 +666,7 @@ class UVK5Radio(chirp_common.CloneModeRadio):
 
         rf.valid_skips = [""]
 
-        rf.memory_bounds = (1, 500)
+        rf.memory_bounds = (1, 200)
         # This is what the BK4819 chip supports
         # Will leave it in a comment, might be useful someday
         rf.valid_bands = [(18000000,  620000000),
@@ -847,7 +822,7 @@ class UVK5Radio(chirp_common.CloneModeRadio):
         # We'll also look at the Channel attributes if a memory has them
         tmpscn = SCANLIST_LIST[0]
 
-        if ch_num < 500:
+        if ch_num < 200:
             _mem3 = self._memobj.ch_attr[ch_num]
             # free memory bit
             if _mem3.is_free:
