@@ -20,7 +20,7 @@
           char str[64] = "";sprintf(str, "%d\r\n", Spectrum_state );LogUart(str);
 */
 #define MAX_VISIBLE_LINES 6
-#define HISTORY_SIZE 30
+#define HISTORY_SIZE 10
 uint32_t HFreqs[HISTORY_SIZE]= {0};
 uint8_t HCount[HISTORY_SIZE]= {0};
 bool HBlacklisted[HISTORY_SIZE]= {0};
@@ -1144,16 +1144,16 @@ static void formatHistory(char *buf, uint8_t index, int Channel, uint32_t freq) 
     char freqStr[16];
     snprintf(freqStr, sizeof(freqStr), "%u.%05u", freq/100000, freq%100000);
     RemoveTrailZeros(freqStr);
-
+    uint8_t count = HCount[index];
+    if (!gCounthistory) count = count/2;
     if(Channel != -1) {
         snprintf(buf, 19, "%s(%u)", 
                 gMR_ChannelFrequencyAttributes[Channel].Name,
-                HCount[index]);
-                
+                count);
     } else {
         snprintf(buf, 19, "%s(%u)", 
                 freqStr,
-                HCount[index]);
+                count);
         }
 }
 
@@ -1695,7 +1695,7 @@ static void OnKeyDown(uint8_t key) {
               break;
           }
         case KEY_EXIT: // Exit parameters menu to previous menu/state
-          SaveSettings();
+          //SaveSettings();
           SetState(SPECTRUM);
           RelaunchScan();
           ResetModifiers();
@@ -2469,6 +2469,33 @@ void LoadValidMemoryChannels(void)
       }
   }
 
+typedef struct HistoryStruct {
+    uint32_t HFreqs;
+    uint8_t HCount;
+    uint8_t HBlacklisted;
+} HistoryStruct;
+
+void ReadHistory() {
+    HistoryStruct History= {0};
+    for (uint16_t position = 0; position < HISTORY_SIZE; position++) {
+    EEPROM_ReadBuffer(0x2000 + position * sizeof(HistoryStruct), (uint8_t *)&History, sizeof(HistoryStruct));
+    if (History.HBlacklisted > 1) return;
+    HFreqs[position] = History.HFreqs;
+    HCount[position] = History.HCount;
+    HBlacklisted[position] = History.HBlacklisted;
+    indexFs = position;
+  }
+}
+
+void WriteHistory(uint8_t HPosition) {
+    HistoryStruct History= {0};
+    if (HPosition >= 100) return;
+    History.HFreqs = HFreqs[HPosition];
+    History.HCount = HCount[HPosition];
+    History.HBlacklisted = HBlacklisted[HPosition];
+    EEPROM_WriteBuffer(0x2000 + HPosition * sizeof(HistoryStruct), (uint8_t *)&History);
+}
+
 typedef struct {
     // Block 1 (0x1D10 - 0x1D1F)
     int ShowLines;
@@ -2525,8 +2552,9 @@ static void LoadSettings()
   BK4819_WriteRegister(BK4819_REG_29, eepromData.R29);
   BK4819_WriteRegister(BK4819_REG_19, eepromData.R19);
   BK4819_WriteRegister(BK4819_REG_73, eepromData.R73);
-
+  ReadHistory();
   }
+
 
 static void SaveSettings() 
 {
@@ -2553,14 +2581,14 @@ static void SaveSettings()
   eepromData.R73 = BK4819_ReadRegister(BK4819_REG_73);
 
   //char str[64] = "";sprintf(str, "R40:%d R29:%d R19:%d R73:%d \r\n", eepromData.R40, eepromData.R29, eepromData.R19, eepromData.R73 );LogUart(str);
-  
-  
   //R40:13520 R29:43840 R19:4161 R73:18066
 
   // Write in 8-byte chunks
   for (uint16_t addr = 0; addr < sizeof(eepromData); addr += 8) 
     EEPROM_WriteBuffer(addr + 0x1D10, ((uint8_t*)&eepromData) + addr);
-  
+  for (uint16_t position = 0; position < indexFs; position++) {
+      WriteHistory(position);
+  }
 }
 
 static void ClearSettings() 
