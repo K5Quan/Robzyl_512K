@@ -27,7 +27,7 @@
 // EEPROM calibration tables start here
 #define EEPROM_WRITE_MAX_ADDR 0xFFFF
 
-void EEPROM_ReadBuffer(uint16_t Address, void *pBuffer, uint8_t Size)
+void EEPROM_ReadBuffer(uint16_t Address, void *pBuffer, uint16_t Size)
 {
 	I2C_Start();
 

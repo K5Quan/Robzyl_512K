@@ -31,12 +31,8 @@ void     BOARD_ADC_GetBatteryInfo(uint16_t *pVoltage);
 void     BOARD_Init(void);
 void     BOARD_EEPROM_Init(void);
 void     BOARD_EEPROM_LoadCalibration(void);
-uint32_t BOARD_fetchChannelFrequency(const int Channel);
+uint32_t BOARD_fetchChannelFrequency(const uint16_t Channel);
 void     BOARD_FactoryReset();
-#ifdef ENABLE_SPECTRUM_SHOW_CHANNEL_NAME
-void     BOARD_gMR_LoadChannels();
-int      BOARD_gMR_fetchChannel(const uint32_t freq);
-#endif
 
 #endif
 

@@ -94,12 +94,12 @@ enum ROGER_Mode_t {
 };
 typedef enum ROGER_Mode_t ROGER_Mode_t;
 
-typedef enum CHANNEL_DisplayMode_t CHANNEL_DisplayMode_t;
+//typedef enum CHANNEL_DisplayMode_t CHANNEL_DisplayMode_t;
 
 typedef struct {
-	uint8_t               ScreenChannel[2]; // current Channels set in the radio (memory or frequency Channels)
-	uint8_t               FreqChannel[2]; // last frequency Channels used
-	uint8_t               MrChannel[2]; // last memory Channels used
+	uint16_t               ScreenChannel; // current Channels set in the radio (memory or frequency Channels)
+	uint16_t               FreqChannel; // last frequency Channels used
+	uint16_t               MrChannel; // last memory Channels used
 	// The actual VFO index (0-upper/1-lower) that is now used for RX, 
 	// It is being alternated by dual watch, and flipped by crossband
 	uint8_t               RX_VFO;
@@ -110,7 +110,7 @@ typedef struct {
 
 	uint8_t               field7_0xa;
 	uint8_t               field8_0xb;
-	uint16_t          FM_FrequencyPlaying;
+	uint16_t	          FM_FrequencyPlaying;
 	uint8_t               SQUELCH_LEVEL;
 	uint8_t               TX_TIMEOUT_TIMER;
 	bool                  KEY_LOCK;
@@ -122,8 +122,7 @@ typedef struct {
 	uint8_t               SCAN_RESUME_MODE;
 	uint8_t               SCAN_LIST_DEFAULT;
 	bool                  SCAN_LIST_ENABLED[2];
-	uint8_t               SCANLIST_PRIORITY_CH1[2];
-	uint8_t               SCANLIST_PRIORITY_CH2[2];
+	
 
 	uint8_t               field29_0x26;
 	uint8_t               field30_0x27;
@@ -141,7 +140,6 @@ typedef struct {
 	uint8_t               KEY_2_LONG_PRESS_ACTION;
 	uint8_t               MIC_SENSITIVITY;
 	uint8_t               MIC_SENSITIVITY_TUNING;
-	uint8_t               CHAN_1_CALL;
 
 	uint8_t               field57_0x6c;
 	uint8_t               field58_0x6d;
@@ -153,7 +151,7 @@ typedef struct {
 	uint8_t               VOLUME_GAIN;
 	uint8_t               DAC_GAIN;
 
-	VFO_Info_t            VfoInfo[2];
+	VFO_Info_t            VfoInfo;
 #ifdef ENABLE_PWRON_PASSWORD
 	uint32_t              POWER_ON_PASSWORD;
 	uint8_t				  PASSWORD_WRONG_ATTEMPTS;
@@ -182,11 +180,10 @@ extern EEPROM_Config_t gEeprom;
 
 void SETTINGS_SaveVfoIndices(void);
 void SETTINGS_SaveSettings(void);
-void SETTINGS_SaveChannelName(uint8_t Channel, const char * name);
-void SETTINGS_SaveChannel(uint8_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, uint8_t Mode);
-void SETTINGS_FetchChannelName(char *s, const int Channel);
+void SETTINGS_SaveChannel(uint16_t Channel, const VFO_Info_t *pVFO, uint8_t Mode);
+void SETTINGS_SaveChannelName(uint16_t Channel, const char * name);
+void SETTINGS_FetchChannelName(char *s, const uint16_t Channel);
 void SETTINGS_SaveBatteryCalibration(const uint16_t * batteryCalibration);
-void SETTINGS_UpdateChannel(uint8_t Channel, const VFO_Info_t *pVFO, bool keep);
+void SETTINGS_UpdateChannel(uint16_t Channel, const VFO_Info_t *pVFO, bool keep);
 void SETTINGS_SetVfoFrequency(uint32_t frequency);
-
 #endif

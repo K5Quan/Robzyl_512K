@@ -68,18 +68,10 @@ uint16_t          gEEPROM_RSSI_CALIB[7][4];
 
 uint16_t          gEEPROM_1F8A;
 uint16_t          gEEPROM_1F8C;
-
-ChannelAttributes_t gMR_ChannelAttributes[FREQ_CHANNEL_LAST + 1];
-
-#ifdef ENABLE_SPECTRUM_SHOW_CHANNEL_NAME
-ChannelFrequencyAttributes gMR_ChannelFrequencyAttributes[MR_CHANNEL_LAST +1];
-#endif
-
 volatile uint16_t gBatterySaveCountdown_10ms = battery_save_count_10ms;
-
 volatile bool     gPowerSaveCountdownExpired;
 volatile bool     gSchedulePowerSave;
-
+ChannelAttributes_t gMR_ChannelAttributes[FREQ_CHANNEL_LAST + 1];
 volatile bool     gScheduleDualWatch = true;
 
 volatile uint16_t gDualWatchCountdown_10ms;
@@ -133,7 +125,7 @@ bool              gFlagReconfigureVfos;
 uint8_t           gVfoConfigureMode;
 bool              gFlagResetVfos;
 bool              gRequestSaveVFO;
-uint8_t           gRequestSaveChannel;
+uint16_t           gRequestSaveChannel;
 bool              gRequestSaveSettings;
 bool              gFlagPrepareTX;
 
@@ -153,7 +145,7 @@ uint8_t           gFlashLightState;
 bool			  Ptt_Toggle_Mode = false;
 volatile uint16_t gFlashLightBlinkCounter;
 bool              gFlagEndTransmission;
-uint8_t           gNextMrChannel;
+uint16_t           gNextMrChannel;
 ReceptionMode_t   gRxReceptionMode;
 
 bool              gTxVfoIsActive;
@@ -182,7 +174,7 @@ volatile bool gScheduleFM;
 
 volatile uint8_t  boot_counter_10ms;
 
-int16_t           gCurrentRSSI[2] = {0, 0};  // now one per VFO
+int16_t           gCurrentRSSI = 0;  // now one per VFO
 
 uint8_t           gIsLocked = 0xFF;
 

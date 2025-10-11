@@ -25,7 +25,7 @@
 #include "dcs.h"
 #include "driver/backlight.h"
 #include "driver/bk4819.h"
-#include "driver/eeprom.h"   // EEPROM_ReadBuffer()
+#include "driver/eeprom.h"
 #include "driver/st7565.h"
 #include "external/printf/printf.h"
 #include "frequencies.h"
@@ -82,7 +82,6 @@ const t_menu_item MenuList[] =
 	// enabled if pressing both the PTT and upper side button at power-on
 	{"Reset",   MENU_RESET         },
 	{"F Lock",  MENU_F_LOCK        },
-	{"1 Call",  MENU_1_CALL        },
 	{"BatCal",  MENU_BATCAL        },
 	{"BatTyp",  MENU_BATTYP        },
 	
@@ -94,7 +93,6 @@ const int CHANNEL_ONLY_SETTINGS[] = {
 	MENU_S_LIST,
 	MENU_DEL_CH,
 	MENU_MEM_NAME,
-	MENU_1_CALL
 };
 
 const int VFO_ONLY_SETTINGS[] = {};
@@ -485,7 +483,6 @@ void UI_DisplayMenu(void)
 				strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
 				break;
 			case MENU_MEM_CH:
-			case MENU_1_CALL:
 			case MENU_DEL_CH:
 			{
 				UI_GenerateChannelStringEx(String, 1, gSubMenuSelection);

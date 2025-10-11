@@ -192,7 +192,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			break;
 
 		case MENU_MEM_CH:
-		case MENU_1_CALL:
+		
 		case MENU_DEL_CH:
 		case MENU_MEM_NAME:
 			*pMin = 0;
@@ -394,11 +394,8 @@ void MENU_AcceptSetting(void)
 
 		case MENU_MEM_CH:
 			gTxVfo->CHANNEL_SAVE = gSubMenuSelection;
-			#if 0
-				gEeprom.MrChannel[0] = gSubMenuSelection;
-			#else
-				gEeprom.MrChannel[0] = gSubMenuSelection;
-			#endif
+			gEeprom.MrChannel = gSubMenuSelection;
+
 			gRequestSaveChannel = 2;
 			gVfoConfigureMode   = VFO_CONFIGURE_RELOAD;
 			gFlagResetVfos      = true;
@@ -469,10 +466,6 @@ void MENU_AcceptSetting(void)
 			gFlagResetVfos    = true;
 //			gRequestSaveChannel = 1;
 			return;
-
-		case MENU_1_CALL:
-			gEeprom.CHAN_1_CALL = gSubMenuSelection;
-			break;
 
 		case MENU_BAT_TXT:
 			gSetting_battery_text = gSubMenuSelection;
@@ -678,11 +671,11 @@ void MENU_ShowCurrentSetting(void)
 
 		case MENU_MEM_CH:
 			//todo: in vfo mode select last empty Channel slot
-			gSubMenuSelection = gEeprom.MrChannel[0];
+			gSubMenuSelection = gEeprom.MrChannel;
 			break;
 
 		case MENU_MEM_NAME:
-			gSubMenuSelection = gEeprom.MrChannel[0];
+			gSubMenuSelection = gEeprom.MrChannel;
 			break;
 
 		case MENU_SAVE:
@@ -725,10 +718,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gTxVfo->Compander;
 			return;
 
-		case MENU_1_CALL:
-			gSubMenuSelection = gEeprom.CHAN_1_CALL;
-			break;
-
 		case MENU_BAT_TXT:
 			gSubMenuSelection = gSetting_battery_text;
 			return;
@@ -750,11 +739,7 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 			case MENU_DEL_CH:
-			#if 0
-				gSubMenuSelection = RADIO_FindNextChannel(gEeprom.MrChannel[0], 1, false, 1);
-			#else
-				gSubMenuSelection = RADIO_FindNextChannel(gEeprom.MrChannel[0], 1, false, 1);
-			#endif
+				gSubMenuSelection = RADIO_FindNextChannel(gEeprom.MrChannel, 1, false);
 			break;
 
 		case MENU_F_LOCK:
@@ -926,7 +911,6 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	
 	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_CH || 
 		UI_MENU_GetCurrentMenuId() == MENU_DEL_CH || 
-		UI_MENU_GetCurrentMenuId() == MENU_1_CALL || 
 		UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
 	{	// enter 3-digit Channel number
 	
@@ -1033,21 +1017,13 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 
 	if (!gIsInSubMenu)
 	{
-		#if 1
-			if (UI_MENU_GetCurrentMenuId() == MENU_DEL_CH || UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
-				if (!RADIO_CheckValidChannel(gSubMenuSelection, false, 0))
+		if (UI_MENU_GetCurrentMenuId() == MENU_DEL_CH || UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
+				if (!RADIO_CheckValidChannel(gSubMenuSelection, false))
 					return;  // invalid Channel
-		#endif
-
 		gAskForConfirmation = 0;
 		gIsInSubMenu        = true;
-
-//		if (UI_MENU_GetCurrentMenuId() != MENU_D_LIST)
-		{
-			gInputBoxIndex      = 0;
-			edit_index          = -1;
-		}
-
+		gInputBoxIndex      = 0;
+		edit_index          = -1;
 		return;
 	}
 
@@ -1055,8 +1031,7 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 	{
 		if (edit_index < 0)
 		{	// enter Channel name edit mode
-			if (!RADIO_CheckValidChannel(gSubMenuSelection, false, 0))
-				return;
+			if (!RADIO_CheckValidChannel(gSubMenuSelection, false))	return;
 		
 			SETTINGS_FetchChannelName(edit, gSubMenuSelection);
 			
@@ -1175,8 +1150,7 @@ static void MENU_Key_STAR(const bool bKeyPressed, const bool bKeyHeld)
 
 static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 {
-	uint8_t VFO;
-	uint8_t Channel;
+	uint16_t Channel;
 	bool    bCheckScanList;
 
 	if (gIsInSubMenu &&
@@ -1257,12 +1231,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		}
 	#endif
 
-	VFO = 0;
-
 	switch (UI_MENU_GetCurrentMenuId())
 	{
 		case MENU_DEL_CH:
-		case MENU_1_CALL:
 		case MENU_MEM_NAME:
 			bCheckScanList = false;
 			break;
@@ -1273,7 +1244,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 			return;
 	}
 
-	Channel = RADIO_FindNextChannel(gSubMenuSelection + Direction, Direction, bCheckScanList, VFO);
+	Channel = RADIO_FindNextChannel(gSubMenuSelection + Direction, Direction, bCheckScanList);
 	if (Channel != 0xFF)
 		gSubMenuSelection = Channel;
 

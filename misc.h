@@ -45,9 +45,9 @@
 
 enum {
 	MR_CHANNEL_FIRST   = 0,
-	MR_CHANNEL_LAST    = 199u,
-	FREQ_CHANNEL_FIRST = 200u,
-	FREQ_CHANNEL_LAST  = 206u,
+	MR_CHANNEL_LAST    = 999u,
+	FREQ_CHANNEL_FIRST = MR_CHANNEL_LAST+1,
+	FREQ_CHANNEL_LAST  = MR_CHANNEL_LAST+7,
 	LAST_CHANNEL
 };
 
@@ -149,21 +149,11 @@ typedef union {
     uint8_t __val;
 } ChannelAttributes_t;
 
-#ifdef ENABLE_SPECTRUM_SHOW_CHANNEL_NAME
-typedef struct
-{
-	uint32_t     Frequency;
-	char         Name[12];
-}  __attribute__((packed)) ChannelFrequencyAttributes;
-
-extern ChannelFrequencyAttributes gMR_ChannelFrequencyAttributes[200];
-#endif
-
 #ifdef ENABLE_SCREENSHOT
          extern volatile uint8_t  gUART_LockScreenshot; // lock screenshot if Chirp is used
 #endif
 
-extern ChannelAttributes_t   gMR_ChannelAttributes[207];
+extern ChannelAttributes_t   gMR_ChannelAttributes[FREQ_CHANNEL_LAST + 1];
 
 typedef struct
 {
@@ -226,7 +216,7 @@ extern bool                  gFlagReconfigureVfos;
 extern uint8_t               gVfoConfigureMode;
 extern bool                  gFlagResetVfos;
 extern bool                  gRequestSaveVFO;
-extern uint8_t               gRequestSaveChannel;
+extern uint16_t               gRequestSaveChannel;
 extern bool                  gRequestSaveSettings;
 extern uint8_t               gKeypadLocked;
 extern bool                  gFlagPrepareTX;
@@ -248,7 +238,7 @@ extern uint8_t               gFlashLightState;
 extern bool 				 Ptt_Toggle_Mode;
 extern volatile uint16_t     gFlashLightBlinkCounter;
 extern bool                  gFlagEndTransmission;
-extern uint8_t               gNextMrChannel;
+extern uint16_t               gNextMrChannel;
 extern ReceptionMode_t       gRxReceptionMode;
 
  //TRUE when dual watch is momentarly suspended and RX_VFO is locked to either last TX or RX
@@ -273,7 +263,7 @@ extern volatile bool         gNextTimeslice_10ms;
 extern volatile bool         gFlagTailNoteEliminationComplete;
 extern volatile uint8_t      gVFOStateResumeCountdown_500ms;
 extern volatile bool     gScheduleFM;
-extern int16_t               gCurrentRSSI[2];   // now one per VFO
+extern int16_t               gCurrentRSSI;   // now one per VFO
 extern uint8_t               gIsLocked;
 extern volatile uint8_t      boot_counter_10ms;
 
