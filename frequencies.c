@@ -163,10 +163,10 @@ int RX_freq_check(const uint32_t Frequency)
 	// otherwise return '-1'
 
 	if (Frequency < RX_freq_min() || Frequency > frequencyBandTable[ARRAY_SIZE(frequencyBandTable) - 1].upper)
-		return 0XFF;
+		return 0xFF;
 
 	if (Frequency >= BX4819_band1.upper && Frequency < BX4819_band2.lower)
-		return 0XFF;
+		return 0xFF;
 
 	return 0;   // OK frequency
 }
