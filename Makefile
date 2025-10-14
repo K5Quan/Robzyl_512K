@@ -20,7 +20,6 @@ ENABLE_PWRON_PASSWORD         := 0
 # ---- CUSTOM MODS ----
 ENABLE_BIG_FREQ                         := 1
 ENABLE_SMALL_BOLD                       := 1
-ENABLE_KEEP_MEM_NAME                    := 1
 ENABLE_WIDE_RX                          := 1
 ENABLE_TX_WHEN_AM                       := 0
 ENABLE_F_CAL_MENU                       := 0
@@ -34,7 +33,6 @@ ENABLE_COPY_CHAN_TO_VFO                 := 1
 ENABLE_SPECTRUM                         := 1
 ENABLE_BYP_RAW_DEMODULATORS             := 0
 ENABLE_BLMIN_TMP_OFF                    := 0
-ENABLE_SPECTRUM_SHOW_CHANNEL_NAME       := 0
 ENABLE_SCANNER							:= 1
 ENABLE_FR_BAND							:= 0
 ENABLE_PL_BAND							:= 0
@@ -265,9 +263,7 @@ endif
 ifeq ($(ENABLE_PWRON_PASSWORD),1)
 	CFLAGS  += -DENABLE_PWRON_PASSWORD
 endif
-ifeq ($(ENABLE_KEEP_MEM_NAME),1)
-	CFLAGS  += -DENABLE_KEEP_MEM_NAME
-endif
+
 ifeq ($(ENABLE_WIDE_RX),1)
 	CFLAGS  += -DENABLE_WIDE_RX
 endif
@@ -319,10 +315,6 @@ ifeq ($(ENABLE_BLMIN_TMP_OFF),1)
 endif
 ifeq ($(ENABLE_SCAN_RANGES),1)
 	CFLAGS  += -DENABLE_SCAN_RANGES
-endif
-
-ifeq ($(ENABLE_SPECTRUM_SHOW_CHANNEL_NAME),1)
-	CFLAGS  += -DENABLE_SPECTRUM_SHOW_CHANNEL_NAME
 endif
 
 ifeq ($(ENABLE_SCANNER),1)

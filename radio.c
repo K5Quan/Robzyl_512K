@@ -170,7 +170,7 @@ void RADIO_ConfigureChannel(const unsigned int configure)
 	if (IS_MR_CHANNEL(Channel))
 		base = 0x2000 + Channel * 16;
 	else
-		base = 0x0C80 //+ ((Channel - FREQ_CHANNEL_FIRST) * 32);
+		base = 0x0C80;
 
 	if (configure == VFO_CONFIGURE_RELOAD || IS_FREQ_CHANNEL(Channel))
 	{

@@ -162,6 +162,7 @@ void SETTINGS_SaveChannel(uint16_t Channel, const VFO_Info_t *pVFO, uint8_t Mode
 				#else
 					if (Mode >= 3) {
 						SETTINGS_SaveChannelName(Channel, pVFO->Name);
+						BOARD_gMR_LoadChannels();
 					}
 				#endif
 			}

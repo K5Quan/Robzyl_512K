@@ -1348,7 +1348,7 @@ static void DrawF(uint32_t f) {
     }
 }
 
-/*void LookupChannelModulation() {
+void LookupChannelModulation() {
 	  uint16_t base;
 		base = 0x2000 + Channel * 16;
 
@@ -1383,7 +1383,7 @@ void LookupChannelInfo() {
       //memmove(ChannelName, gMR_ChannelFrequencyAttributes[Channel].Name, sizeof(ChannelName));
       LookupChannelModulation();
     }
-  } */
+  }
 
 static void DrawNums() {
 

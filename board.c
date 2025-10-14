@@ -595,6 +595,22 @@ void BOARD_EEPROM_Init(void)
 		}
 	}
 	
+	BOARD_gMR_LoadChannels();
+	
+}
+
+// Load Channel frequencies, names into global memory lookup table
+void BOARD_gMR_LoadChannels() {
+	uint16_t  i;
+	uint32_t freq_buf;
+
+	for (i = MR_CHANNEL_FIRST; i <= MR_CHANNEL_LAST; i++)
+	{
+		freq_buf = BOARD_fetchChannelFrequency(i);
+
+		gMR_ChannelFrequencyAttributes[i].Frequency = RX_freq_check(freq_buf) == -1 ? 0 : freq_buf;
+		SETTINGS_FetchChannelName(gMR_ChannelFrequencyAttributes[i].Name, i);
+	}
 }
 
 void BOARD_EEPROM_LoadCalibration(void)
@@ -660,6 +676,16 @@ uint32_t BOARD_fetchChannelFrequency(const uint16_t Channel)
 
 	return info.frequency;
 }
+uint16_t BOARD_gMR_fetchChannel(const uint32_t freq)
+	{
+		for (uint16_t i = MR_CHANNEL_FIRST; i <= MR_CHANNEL_LAST; i++) {
+			if (gMR_ChannelFrequencyAttributes[i].Frequency == freq)
+				return i;
+		}
+		// Return -1 if no Channel found
+		return 0xFFFF;
+	}
+
 
 void BOARD_FactoryReset()
 {
