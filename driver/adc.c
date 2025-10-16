@@ -151,18 +151,18 @@ void ADC_Start(void)
 bool ADC_CheckEndOfConversion(ADC_CH_MASK Mask)
 {
 	volatile ADC_Channel_t *pChannels = (volatile ADC_Channel_t *)&SARADC_CH0;
-	uint8_t Channel = ADC_GetChannelNumber(Mask);
+	uint8_t Chn = ADC_GetChannelNumber(Mask);
 
-	return (pChannels[Channel].STAT & ADC_CHx_STAT_EOC_MASK) >> ADC_CHx_STAT_EOC_SHIFT;
+	return (pChannels[Chn].STAT & ADC_CHx_STAT_EOC_MASK) >> ADC_CHx_STAT_EOC_SHIFT;
 }
 
 uint16_t ADC_GetValue(ADC_CH_MASK Mask)
 {
 	volatile ADC_Channel_t *pChannels = (volatile ADC_Channel_t *)&SARADC_CH0;
-	uint8_t Channel = ADC_GetChannelNumber(Mask);
+	uint8_t Chn = ADC_GetChannelNumber(Mask);
 
-	SARADC_IF = 1 << Channel; // TODO: Or just use 'Mask'
+	SARADC_IF = 1 << Chn; // TODO: Or just use 'Mask'
 
-	return (pChannels[Channel].DATA & ADC_CHx_DATA_DATA_MASK) >> ADC_CHx_DATA_DATA_SHIFT;
+	return (pChannels[Chn].DATA & ADC_CHx_DATA_DATA_MASK) >> ADC_CHx_DATA_DATA_SHIFT;
 }
 

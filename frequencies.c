@@ -121,7 +121,7 @@ uint32_t FREQUENCY_RoundToStep(uint32_t freq, uint16_t step)
 {
 	if(step == 833) {
         uint32_t base = freq/2500*2500;
-        uint16_t chno = (freq - base) / 700;    // convert entered aviation 8.33Khz channel number scheme to actual frequency. 
+        uint16_t chno = (freq - base) / 700;    // convert entered aviation 8.33Khz chanel number scheme to actual frequency. 
         return base + (chno * 833) + (chno == 3);
 	}
 	if(step == 1)
@@ -160,7 +160,7 @@ int TX_freq_check(const uint32_t Frequency)
 
 int RX_freq_check(const uint32_t Frequency)
 {	// return '0' if RX frequency is allowed
-	// otherwise return '-1'
+	// otherwise return FF
 
 	if (Frequency < RX_freq_min() || Frequency > frequencyBandTable[ARRAY_SIZE(frequencyBandTable) - 1].upper)
 		return 0xFF;

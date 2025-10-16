@@ -3,7 +3,7 @@
 #
 # based on template.py Copyright 2012 Dan Smith <dsmith@danplanet.com>
 
-# 0x000 to 3E8 channel attributes 1 byte
+# 0x000 to 3E8 chanel attributes 1 byte
 # 0x03E9 to 0x1DFF VFO params
 # 0x1F00 to 0x2000 calibration
 # 0x2000 to 0x5E80 channels freqs and params 16 bytes
