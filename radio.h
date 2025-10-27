@@ -113,7 +113,6 @@ typedef struct VFO_Info_t
 	uint8_t        CHANNEL_BANDWIDTH;
 
 	uint8_t        SCANLIST;
-	bool 		   is_free;
 	uint8_t        Band;
 	uint8_t        BUSY_CHANNEL_LOCK;
 	ModulationMode_t    Modulation;

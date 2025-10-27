@@ -41,8 +41,7 @@ MEM_FORMAT = """
 #seekto 0x3900;
 struct {
 u8 scanlist:4,
-is_free:1,
-band:3;
+band:4;
 } ch_attr[400];
 
 #seekto 0x2000;
@@ -835,9 +834,6 @@ class UVK5Radio(chirp_common.CloneModeRadio):
 
         if ch_num < 400:
             _mem3 = self._memobj.ch_attr[ch_num]
-            # free memory bit
-            if _mem3.is_free:
-                is_empty = True
             # scanlists
             temp_val = _mem3.scanlist
             tmpscn = SCANLIST_LIST[temp_val]
@@ -1390,14 +1386,13 @@ class UVK5Radio(chirp_common.CloneModeRadio):
             _mem2 = self._memobj.Channelname[number]
             _mem2.set_raw("\xFF" * 16)
             _mem4.scanlist = 0
-            _mem4.is_free = 1
-            _mem4.band = 0x7
+            
+            _mem4.band = 0xF
             return memory
 
         
         _mem4.scanlist = 0
-        _mem4.is_free = 1
-        _mem4.band = 0x7
+        _mem4.band = 0xF
 
         # mode ["FM", "NFM", "AM", "NAM", "AIR", "USB"]
         # 0 = FM, 1 = AM, 2 = USB
@@ -1438,8 +1433,6 @@ class UVK5Radio(chirp_common.CloneModeRadio):
             _mem.offsetDir = FLAGS1_OFFSET_MINUS
             _mem.offset = _mem.freq
         # set band
-        
-        _mem4.is_free = 0
         band = self._find_band(_mem.freq)
         _mem4.band = band
 

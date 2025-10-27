@@ -8,7 +8,7 @@
 #include "action.h"
 #include "bands.h"
 #include "ui/main.h"
-#include "debugging.h"
+//#include "debugging.h"
 
 
 #ifdef ENABLE_SCREENSHOT
@@ -93,12 +93,9 @@ uint8_t refresh = 0;
 #define Bottom_print 51 //Robby69
 Mode appMode;
 #define UHF_NOISE_FLOOR 20
-
 uint16_t scanChannel[MR_CHANNEL_LAST + 3];
 uint8_t ScanListNumber[MR_CHANNEL_LAST + 3];
-
-//uint8_t scanChannel[MR_CHANNEL_LAST+3];
-uint8_t scanChannelsCount;
+uint16_t scanChannelsCount;
 void ToggleScanList();
 static void LoadSettings();
 static void SaveSettings();
@@ -2486,21 +2483,21 @@ void LoadValidMemoryChannels(void)
       uint16_t offset = scanChannelsCount;
       uint16_t listChannelsCount = RADIO_ValidMemoryChannelsCount(listsEnabled, CurrentScanList-1);
       scanChannelsCount += listChannelsCount;
-      uint16_t channelIndex= 0;
-      char str[64] = "";sprintf(str, "listChannelsCount: %d\r\n", listChannelsCount );LogUart(str);
+      int16_t channelIndex= -1;
       for(uint16_t i=0; i < listChannelsCount; i++)
       {
         uint16_t nextChannel;
-        nextChannel = RADIO_FindNextChannel((channelIndex), 1, listsEnabled, CurrentScanList-1);
+        nextChannel = RADIO_FindNextChannel(channelIndex+1, 1, listsEnabled, CurrentScanList-1);
         
         if (nextChannel == 0xFFFF) {break;}
         else
         {
           channelIndex = nextChannel;
           scanChannel[offset+i]=channelIndex;
+          //char str[64] = "";sprintf(str, "%d %d %d %d \r\n", scanChannelsCount,offset,i,channelIndex);LogUart(str);
+		
           ScanListNumber[offset+i]=CurrentScanList;
-                    char str[64] = "";sprintf(str, "%d %d %d\r\n", offset,i,CurrentScanList );LogUart(str);
-
+      
         }
       }
     }

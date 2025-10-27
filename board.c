@@ -46,6 +46,8 @@
 #include "ui/menu.h"
 #include "ARMCM0.h"
 
+#include "debugging.h"
+
 #if defined(ENABLE_OVERLAY)
 	void BOARD_FLASH_Init(void)
 	{
@@ -585,8 +587,9 @@ void BOARD_EEPROM_Init(void)
 		gEeprom.ScreenChannel = gEeprom.MrChannel;
 	}
 
-	EEPROM_ReadBuffer(0x3900, gMR_ChannelAttributes, sizeof(gMR_ChannelAttributes));
-	for(uint16_t i = 0; i < sizeof(gMR_ChannelAttributes); i++) {
+	EEPROM_ReadBuffer(0x3900, gMR_ChannelAttributes, 200);
+	EEPROM_ReadBuffer(0x39C8, gMR_ChannelAttributes + 0xC8, 200);
+	for(uint16_t i = 0; i < 400; i++) {
 		ChannelAttributes_t *att = &gMR_ChannelAttributes[i];
 		if(att->__val == 0xff){
 			att->__val = 0;
