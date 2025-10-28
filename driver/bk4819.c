@@ -27,7 +27,7 @@
 #include "driver/system.h"
 #include "driver/systick.h"
 #include "settings.h"
-#include "debugging.h"
+//#include "debugging.h"
 #include "app/spectrum.h"
 
 #ifndef ARRAY_SIZE

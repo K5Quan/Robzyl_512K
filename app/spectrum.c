@@ -20,7 +20,7 @@
           char str[64] = "";sprintf(str, "%d\r\n", Spectrum_state );LogUart(str);
 */
 #define MAX_VISIBLE_LINES 6
-#define HISTORY_SIZE 30
+#define HISTORY_SIZE 100
 uint32_t HFreqs[HISTORY_SIZE]= {0};
 uint8_t HCount[HISTORY_SIZE]= {0};
 bool HBlacklisted[HISTORY_SIZE]= {0};

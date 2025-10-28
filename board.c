@@ -46,7 +46,7 @@
 #include "ui/menu.h"
 #include "ARMCM0.h"
 
-#include "debugging.h"
+//#include "debugging.h"
 
 #if defined(ENABLE_OVERLAY)
 	void BOARD_FLASH_Init(void)

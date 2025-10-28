@@ -37,7 +37,7 @@
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 #include <stdlib.h>
-#include "debugging.h"
+//#include "debugging.h"
 
 static void MAIN_Key_STAR(bool closecall)
 {
@@ -319,12 +319,11 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 	else {if (gInputBoxIndex > 0)	return;}
 
 	uint16_t Next;
-	char str[64] = "";sprintf(str, "ch %d \r\n", Channel);LogUart(str);
+	
 	if (IS_FREQ_CHANNEL(Channel))
 	{	// step/down in frequency
 		const uint32_t frequency = APP_SetFrequencyByStep(gTxVfo, Direction);
-		char str[64] = "";sprintf(str, "freq %d \r\n", frequency);LogUart(str);
-		//if (RX_freq_check(frequency) == 0xFF) return;
+		if (RX_freq_check(frequency) == 0xFF) return;
 		gTxVfo->freq_config_RX.Frequency = frequency;
 		BK4819_SetFrequency(frequency);
 		gRequestSaveChannel = 1;
