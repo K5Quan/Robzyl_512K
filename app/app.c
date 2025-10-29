@@ -71,15 +71,8 @@ static void FlashlightTimeSlice();
 static void UpdateRSSI()
 {
     int16_t rssi = BK4819_GetRSSI();
-    
-    if (gCurrentRSSI == rssi)
-        return;     // no change
-
-    //rssiScope[SCOPE_WIDTH - 1] = rssi;
-
+    if (gCurrentRSSI == rssi) return;   // no change
     gCurrentRSSI = rssi;
-	
-
 }
 
 /* static void DrawLine(int x, int y1, int y2)
@@ -129,34 +122,20 @@ void UpdateAndDrawGlitchScope(void)
 	
 } */
 
-int32_t afc_to_deviation_hz(uint16_t reg_6d) {
-  return ((int64_t)(int16_t)reg_6d * 1000LL) / 291LL;
-}
-
 void DrawNumeric(void)
 {
-    int pos=0;
-	uint16_t rssi  = gCurrentRSSI;
-    //uint8_t glitch = BK4819_GetGlitchIndicator();
-    //uint16_t noise = BK4819_GetExNoiseIndicator();
+    int pos = 0;
+	int len = 0;
 	uint32_t cdcssFreq;
 	uint16_t ctcssFreq;
     uint8_t code = 0;
 	char buf[32]= "";
-	char buf2[32]= "";
 
 	if(gCurrentFunction == FUNCTION_RECEIVE || gCurrentFunction == FUNCTION_MONITOR || gCurrentFunction == FUNCTION_INCOMING) {
-		int32_t hz = afc_to_deviation_hz(BK4819_ReadRegister(0x6D));
+		int32_t hz = ((int64_t)(int16_t)BK4819_ReadRegister(0x6D) * 1000LL) / 291LL;
     	memset(&gFrameBuffer[0][0], 0, 2 * 128);
-		//sprintf(buf, "GL:%3u RS:%3u NO:%3u",glitch, rssi, noise );
-		sprintf(buf, "RS:%3u AFC:%+d ", rssi, hz);
-		UI_PrintStringSmall(buf, 1, 0, 0, 0);
-	}
-	if(gCurrentFunction == FUNCTION_TRANSMIT) {
-		uint8_t voice_amp  = BK4819_GetVoiceAmplitudeOut();
-		sprintf(&buf2[pos],"AU:%3d ",voice_amp);
-	}
-	else {
+		len = sprintf(buf, "AFC:%+d ", hz);
+		pos += len;
 		BK4819_WriteRegister(BK4819_REG_51,
 		BK4819_REG_51_ENABLE_CxCSS         |
 		BK4819_REG_51_AUTO_CDCSS_BW_ENABLE |
@@ -166,16 +145,15 @@ void DrawNumeric(void)
 		BK4819_CssScanResult_t scanResult = BK4819_GetCxCSSScanResult(&cdcssFreq, &ctcssFreq);
 		if (scanResult == BK4819_CSS_RESULT_CTCSS) {
 				code = DCS_GetCtcssCode(ctcssFreq);
-				sprintf(&buf2[pos],"%u.%uHz", CTCSS_Options[code] / 10, CTCSS_Options[code] % 10);
+				sprintf(&buf[pos],"%u.%uHz", CTCSS_Options[code] / 10, CTCSS_Options[code] % 10);
 
 			}
    		else if (scanResult == BK4819_CSS_RESULT_CDCSS) {
 				code = DCS_GetCdcssCode(cdcssFreq);
-				if (code != 0xFF) sprintf(&buf2[pos],"D%03oN", DCS_Options[code]);
+				if (code != 0xFF) sprintf(&buf[pos],"D%03oN", DCS_Options[code]);
 		}
+	UI_PrintStringSmall(buf, 1, 0, 0, 0);
 	}
-
-	UI_PrintStringSmall(buf2, 1, 0, 1, 0);
 }
 
 static void CheckForIncoming(void)
@@ -211,7 +189,7 @@ void APP_TimeSliceScope(void) {
 	if (gScreenToDisplay == DISPLAY_MAIN)
 	{
 	DrawNumeric();
-	DrawLevelBar(gCurrentRSSI,120,380);
+	DisplayRSSIBar(gCurrentRSSI);
 	ST7565_BlitFullScreen();
 	}
 }

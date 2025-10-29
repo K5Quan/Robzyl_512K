@@ -33,7 +33,8 @@ extern center_line_t center_line;
 
 void UI_DisplayAudioBar(void);
 void UI_DisplayMain(void);
-void DrawLevelBar(int value, int minValue, int maxValue);
+void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level);
+void DisplayRSSIBar(const int16_t rssi);
 
 #endif
 

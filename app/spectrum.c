@@ -1148,17 +1148,16 @@ switch(SpectrumMonitor) {
   } 
 
 
-  //if (gAutoTriggerLevel)len = sprintf(&String[pos],"A U%d/D%d %dms %s ", settings.rssiTriggerLevelUp,settings.rssiTriggerLevelDn,DelayRssi, gModulationStr[settings.modulationType]);
-  //else 
   len = sprintf(&String[pos],"U%d %dms %s %s ", settings.rssiTriggerLevelUp,DelayRssi, gModulationStr[settings.modulationType],bwNames[settings.listenBw]);
-  pos += len;  // Move position forward
-  
+  pos += len;
+  int32_t afc = ((int64_t)(int16_t)BK4819_ReadRegister(0x6D) * 1000LL) / 291LL;
+  if (afc){
+      len = sprintf(&String[pos],"A%+d ", afc);
+      pos += len;
+  }
+
   if (WaitSpectrum > 0 && WaitSpectrum <61000){len = sprintf(&String[pos],"%d", WaitSpectrum/1000);pos += len;}
   else if(WaitSpectrum > 61000){len = sprintf(&String[pos],"oo");pos += len;} //locked
-  
-  //if (StopSpectrum>0 && StopSpectrum <61000){len = sprintf(&String[pos],"%d", StopSpectrum/1000);pos += len;}
-  //else if(StopSpectrum > 61000){len = sprintf(&String[pos],"oo");pos += len;} //locked
-  
   GUI_DisplaySmallest(String, 0, 1, true,true);
   BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[gBatteryCheckCounter++ % 4]);
 
@@ -1169,9 +1168,7 @@ switch(SpectrumMonitor) {
   unsigned perc = BATTERY_VoltsToPercent(voltage);
   gStatusLine[116] = 0b00011100;
   gStatusLine[117] = 0b00111110;
-  for (int i = 118; i <= 126; i++) {
-    gStatusLine[i] = 0b00100010;
-  }
+  for (int i = 118; i <= 126; i++) {gStatusLine[i] = 0b00100010;}
   
   for (unsigned i = 127; i >= 118; i--) {
     if (127 - i <= (perc+5)*9/100) {
@@ -1264,28 +1261,15 @@ static void DrawF(uint32_t f) {
     if (HandlePopup()) return;
     if (f == 0) return;
 
-    // --- Format fréquence ---
     char freqStr[18];
     FormatFrequency(f, freqStr, sizeof(freqStr));
-
-    // --- Mise à jour CTCSS/DCS ---
     UpdateCssDetection();
-
-    // --- Scan lists activées ---
     char enabledLists[64];
     BuildEnabledScanLists(enabledLists, sizeof(enabledLists));
-    
-    // --- Contexte canal ---
     f = HFreqs[historyListIndex];
     uint16_t channelFd = BOARD_gMR_fetchChannel(f);
     isKnownChannel = (channelFd != 0xFFFF);
-    
     ReadChannelName(channelFd,channelName);
-    //char str[64] = "";sprintf(str, "%d %s\r\n", channelFd,channelName );LogUart(str);
-
-    //NO NAMES memmove(rxChannelName, channelName, sizeof(rxChannelName));
-
-    // Buffers
     char line1[19] = "";
     char line2[19] = "";
     char line3[19] = "";

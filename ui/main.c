@@ -49,41 +49,29 @@ static void DrawSmallAntennaAndBars(uint8_t *p, unsigned int level)
 		memset(p + 2 + i*3, bar, 2);
 	}
 }
-//#if defined ENABLE_AUDIO_BAR || defined ENABLE_RSSI_BAR
 
-
-#define BAR_WIDTH   16
-#define BAR_MAX     32
-#define XPOS        112
-#define YPOS        58   // bas du bargraph
-
-void DrawLevelBar(int value, int minValue, int maxValue)
+void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level)
 {
-    if (maxValue <= minValue) return;
+	const char hollowBar[] = {
+		0b01111111,
+		0b01000001,
+		0b01000001,
+		0b01111111
+	};
 
-    int level = BAR_MAX * (value - minValue) / (maxValue - minValue);
-    if (level > BAR_MAX) level = BAR_MAX;
-    if (level < 0) level = 0;
+	uint8_t *p_line = gFrameBuffer[line];
+	level = MIN(level, 13);
 
-    uint8_t masks[4] = {0};
-
-    for (int i = 0; i < 4; i++) {
-        int bitsInPage = level - (BAR_MAX - 8*(i+1));
-        if (bitsInPage <= 0) masks[i] = 0x00;
-        else if (bitsInPage >= 8) masks[i] = 0xFF;
-        else masks[i] = (uint8_t)((0xFF << (8 - bitsInPage)) & 0xFF);
-    }
-
-    for (uint8_t x = XPOS; x < XPOS + BAR_WIDTH; x++) {
-        gFrameBuffer[3][x] = masks[0];
-        gFrameBuffer[4][x] = masks[1];
-        gFrameBuffer[5][x] = masks[2];
-        gFrameBuffer[6][x] = masks[3];
-    }
+	for(uint8_t i = 0; i < level; i++) {
+		if(i < 9) {
+			for(uint8_t j = 0; j < 4; j++)
+				p_line[xpos + i * 5 + j] = (~(0x7F >> (i+1))) & 0x7F;
+		}
+		else {
+			memcpy(p_line + (xpos + i * 5), &hollowBar, ARRAY_SIZE(hollowBar));
+		}
+	}
 }
-
-
-//#endif
 
 #ifdef ENABLE_AUDIO_BAR
 
@@ -126,14 +114,30 @@ void UI_DisplayAudioBar(void)
 	const unsigned int level      = MIN(voice_amp * 8, 65535u);
 	const unsigned int sqrt_level = MIN(sqrt16(level), 124u);
 	uint8_t bars = 13 * sqrt_level / 124;
-
-	
-	DrawLevelBar(bars, 0,13);
-
+	DrawLevelBar(62, 1, bars);
 	ST7565_BlitFullScreen();
-
 }
 #endif
+
+void DisplayRSSIBar(const int16_t rssi)
+{	if (gCurrentFunction == FUNCTION_RECEIVE ||	gCurrentFunction == FUNCTION_MONITOR ||	gCurrentFunction == FUNCTION_INCOMING) {
+			const unsigned int line = 1;
+			uint8_t           *p_line        = gFrameBuffer[line];
+			char               str[16];
+			if (gEeprom.KEY_LOCK && gKeypadLocked > 0) return;     // display is in use
+			if (gCurrentFunction == FUNCTION_TRANSMIT || gScreenToDisplay != DISPLAY_MAIN) return;     // display is in use
+			memset(p_line, 0, LCD_WIDTH);
+			sLevelAttributes sLevelAtt;
+			sLevelAtt = GetSLevelAttributes(rssi, gTxVfo->freq_config_RX.Frequency);
+			uint8_t overS9Bars = MIN(sLevelAtt.over/10, 4);
+			if(overS9Bars == 0) {sprintf(str, "%d S%d", sLevelAtt.dBmRssi, sLevelAtt.sLevel);}
+			else {
+				sprintf(str, "%d+%d", sLevelAtt.dBmRssi, sLevelAtt.over);
+			}
+			UI_PrintStringSmall(str, 2, 0, line,0);
+			DrawLevelBar(62, line, sLevelAtt.sLevel + overS9Bars);
+	}
+}
 
 void UI_DisplayMain(void)
 {
@@ -240,20 +244,9 @@ void UI_DisplayMain(void)
 				case OUTPUT_POWER_HIGH: Level = 6; break;
 			}
 		}
-		else if (mode == 2)
-			{	// RX signal level
-				#ifndef ENABLE_RSSI_BAR
-					// bar graph
-					if (gVFO_RSSI_bar_level > 0)
-						Level = gVFO_RSSI_bar_level;
-				#endif
-			}
+
 		if(Level) DrawSmallAntennaAndBars(p_line + LCD_WIDTH, Level);
-		
-
-
 		String[0] = '\0';
-
 		// show the modulation symbol
 		const char * s = "";
 		const ModulationMode_t mod = gEeprom.VfoInfo.Modulation;
@@ -303,21 +296,13 @@ void UI_DisplayMain(void)
 			UI_PrintStringSmall("SCR", LCD_WIDTH + 106, 0, line + 5,0);
 
 	if (center_line == CENTER_LINE_NONE)
-	{	// we're free to use the middle line
-/* 
-		const bool rx = (gCurrentFunction == FUNCTION_RECEIVE ||
-		                 gCurrentFunction == FUNCTION_MONITOR ||
-		                 gCurrentFunction == FUNCTION_INCOMING); */
-
-
+	{	
 		if (gCurrentFunction == FUNCTION_TRANSMIT) {
 			center_line = CENTER_LINE_AUDIO_BAR;
 			UI_DisplayAudioBar();
 		}
 
 	}
-
 	ST7565_BlitFullScreen();
-		
 }
 
