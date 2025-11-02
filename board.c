@@ -614,7 +614,6 @@ void BOARD_gMR_LoadChannels() {
 		freq_buf = BOARD_fetchChannelFrequency(i);
 
 		gMR_ChannelFrequencyAttributes[i].Frequency = RX_freq_check(freq_buf) == 0xFF ? 0 : freq_buf;
-		//NO NAMES SETTINGS_FetchChannelName(gMR_ChannelFrequencyAttributes[i].Name, i);
 	}
 }
 
@@ -639,9 +638,6 @@ void BOARD_EEPROM_LoadCalibration(void)
 	}
 	gBatteryCalibration[5] = 2300;
 
-
-	//EEPROM_ReadBuffer(0x1F80 + gEeprom.MIC_SENSITIVITY, &Mic, 1);
-	//gEeprom.MIC_SENSITIVITY_TUNING = (Mic < 32) ? Mic : 15;
 	gEeprom.MIC_SENSITIVITY_TUNING = gMicGain_dB2[gEeprom.MIC_SENSITIVITY];
 
 	{

@@ -60,6 +60,7 @@ void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level)
 	};
 
 	uint8_t *p_line = gFrameBuffer[line];
+	memset(p_line, 0, LCD_WIDTH);
 	level = MIN(level, 13);
 
 	for(uint8_t i = 0; i < level; i++) {
@@ -71,6 +72,7 @@ void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level)
 			memcpy(p_line + (xpos + i * 5), &hollowBar, ARRAY_SIZE(hollowBar));
 		}
 	}
+	ST7565_BlitFullScreen();
 }
 
 #ifdef ENABLE_AUDIO_BAR
@@ -115,7 +117,7 @@ void UI_DisplayAudioBar(void)
 	const unsigned int sqrt_level = MIN(sqrt16(level), 124u);
 	uint8_t bars = 13 * sqrt_level / 124;
 	DrawLevelBar(62, 1, bars);
-	ST7565_BlitFullScreen();
+	
 }
 #endif
 
