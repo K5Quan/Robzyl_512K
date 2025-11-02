@@ -2232,16 +2232,16 @@ static void Render() {
 bool HandleUserInput() {
     kbd.prev = kbd.current;
     kbd.current = GetKey();
-    /* if (kbd.current != KEY_INVALID && kbd.current == kbd.prev) {
+    if (kbd.current != KEY_INVALID && kbd.current == kbd.prev) {
         if (kbd.counter < 16) kbd.counter++;
         else
             kbd.counter -= 3;
         SYSTEM_DelayMs(20);
     } else {
         kbd.counter = 0;
-    } */
+    } 
 
-    //if (kbd.counter == 3 || kbd.counter == 16) {
+    if (kbd.counter == 3 || kbd.counter == 16) {
     
         if (kbd.current == KEY_0) {
             if (!historyListActive) {
@@ -2278,7 +2278,7 @@ bool HandleUserInput() {
 #endif // ENABLE_SCANLIST_SHOW_DETAIL
         }
         return true;
-    //}
+    }
     return false;
 }
 
