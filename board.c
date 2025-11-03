@@ -46,7 +46,7 @@
 #include "ui/menu.h"
 #include "ARMCM0.h"
 
-//#include "debugging.h"
+#include "debugging.h"
 
 #if defined(ENABLE_OVERLAY)
 	void BOARD_FLASH_Init(void)
@@ -604,18 +604,67 @@ void BOARD_EEPROM_Init(void)
 	
 }
 
-// Load Chanel frequencies, names into global memory lookup table
+#define STEP 125
+#define INVALID_FREQ 0xFFFFFFFF
+#define MAX_DELTA 0xFFFE   // delta max 16 bits
+#define MAX_EXCEPTIONS 16  // nombre max d'exceptions
+
+uint32_t baseFreq;
+uint16_t deltas[MR_CHANNEL_LAST+1];       // deltas 16 bits
+uint8_t exceptionCount = 0;
+struct {
+    uint16_t index;
+    uint32_t freq;
+} exceptions[MAX_EXCEPTIONS];
+
 void BOARD_gMR_LoadChannels() {
-	uint16_t  i;
-	uint32_t freq_buf;
+    baseFreq = BOARD_fetchChannelFrequency(0);
+    uint32_t prevFreq = baseFreq;
+    deltas[0] = 0;
+    exceptionCount = 0;
 
-	for (i = MR_CHANNEL_FIRST; i <= MR_CHANNEL_LAST; i++)
-	{
-		freq_buf = BOARD_fetchChannelFrequency(i);
+    for(uint16_t i = 1; i <= MR_CHANNEL_LAST; i++) {
+        uint32_t freq_buf = BOARD_fetchChannelFrequency(i);
+        uint32_t delta = (freq_buf - prevFreq) / STEP;
 
-		gMR_ChannelFrequencyAttributes[i].Frequency = RX_freq_check(freq_buf) == 0xFF ? 0 : freq_buf;
-	}
+        if(delta > MAX_DELTA && exceptionCount < MAX_EXCEPTIONS) {
+            // fréquence exceptionnelle
+            deltas[i] = 0;
+            exceptions[exceptionCount].index = i;
+            exceptions[exceptionCount].freq  = freq_buf;
+            exceptionCount++;
+            prevFreq = freq_buf;
+        } else {
+            deltas[i] = (uint16_t)delta;
+            prevFreq += STEP * deltas[i];
+        }
+    }
 }
+
+uint32_t reconstructFreq(uint16_t index) {
+    if(index > MR_CHANNEL_LAST) return INVALID_FREQ;
+
+    uint32_t freq = baseFreq;
+    uint16_t lastExceptionIndex = 0;
+    uint32_t lastExceptionFreq = baseFreq;
+
+    for(uint8_t e = 0; e < exceptionCount; e++) {
+        if(exceptions[e].index <= index) {
+            lastExceptionIndex = exceptions[e].index;
+            lastExceptionFreq = exceptions[e].freq;
+        } else {
+            break;
+        }
+    }
+
+    freq = lastExceptionFreq;
+    for(uint16_t i = lastExceptionIndex + 1; i <= index; i++) {
+        freq += STEP * deltas[i];
+    }
+
+    return freq;
+}
+
 
 void BOARD_EEPROM_LoadCalibration(void)
 {
@@ -683,7 +732,7 @@ uint32_t BOARD_fetchChannelFrequency(const uint16_t Channel)
 uint16_t BOARD_gMR_fetchChannel(const uint32_t freq)
 	{
 		for (uint16_t i = MR_CHANNEL_FIRST; i <= MR_CHANNEL_LAST; i++) {
-			if (gMR_ChannelFrequencyAttributes[i].Frequency == freq)
+			if (reconstructFreq(i) == freq)
 				return i;
 		}
 		// Return if no Chanel found

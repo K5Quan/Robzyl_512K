@@ -8,6 +8,7 @@
 #include "action.h"
 #include "bands.h"
 #include "ui/main.h"
+#include "board.h"
 //#include "debugging.h"
 
 
@@ -575,9 +576,8 @@ if (historyListActive == true){
             randomChannel++;
             if (randomChannel >scanChannelsCount)randomChannel = 1;
             if (i>200) break;}
-          rndfreq = gMR_ChannelFrequencyAttributes[scanChannel[randomChannel]].Frequency;
+          rndfreq = reconstructFreq(scanChannel[randomChannel]);
           SETTINGS_SetVfoFrequency(rndfreq);
-          //SETTINGS_UpdateChannel(scanChannel[randomChannel],gTxVfo,1);
           gEeprom.MrChannel     = scanChannel[randomChannel];
 			    gEeprom.ScreenChannel = scanChannel[randomChannel];
           gTxVfo->Modulation = MODULATION_FM;
@@ -776,7 +776,7 @@ static bool InitScan() {
       }
     if (appMode == CHANNEL_MODE) {
       uint16_t currentChannel = scanChannel[0];
-      scanInfo.f = gMR_ChannelFrequencyAttributes[currentChannel].Frequency; 
+      scanInfo.f = reconstructFreq(currentChannel); 
     }
     //BK4819_SetFilterBandwidth(settings.listenBw, false);
     return scanInitializedSuccessfully;
@@ -1340,10 +1340,7 @@ static void DrawF(uint32_t f) {
 void LookupChannelInfo() {
     gChannel = BOARD_gMR_fetchChannel(peak.f);
     isKnownChannel = gChannel == 0xFFFF ? false : true;
-    if (isKnownChannel){
-      //NO NAMES memmove(channelName, gMR_ChannelFrequencyAttributes[Channel].Name, sizeof(channelName));
-      LookupChannelModulation();
-    }
+    if (isKnownChannel){LookupChannelModulation();}
   }
 
 void LookupChannelModulation() {
@@ -1416,7 +1413,7 @@ static void NextScanStep() {
     { 
       int currentChannel = scanChannel[scanInfo.i];
       settings.rssiTriggerLevelUp = SLRssiTriggerLevelUp[ScanListNumber[scanInfo.i]];
-      scanInfo.f =  gMR_ChannelFrequencyAttributes[currentChannel].Frequency;
+      scanInfo.f =  reconstructFreq(currentChannel);
     } 
     else {
           // frequency mode
@@ -2655,7 +2652,7 @@ static bool GetScanListLabel(uint8_t scanListIndex, char* bufferOut) {
 
     SETTINGS_FetchChannelName(channel_name, first_channel);
     if (channel_name[0] == '\0') {
-        uint32_t freq = gMR_ChannelFrequencyAttributes[first_channel].Frequency;
+        uint32_t freq = reconstructFreq(first_channel);
         char freqStr[12];
         sprintf(freqStr, "%u.%05u", freq / 100000, freq % 100000);
         RemoveTrailZeros(freqStr);
@@ -2949,7 +2946,7 @@ static void RenderScanListChannelsDoubleLines(const char* title, uint8_t numItem
         char channel_name[12];
         SETTINGS_FetchChannelName(channel_name, channelIndex);
         
-        uint32_t freq = gMR_ChannelFrequencyAttributes[channelIndex].Frequency;
+        uint32_t freq = reconstructFreq(channelIndex);
         char freqStr[16];
         sprintf(freqStr, "... %u.%05u", freq/100000, freq%100000);
         RemoveTrailZeros(freqStr);
