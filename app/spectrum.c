@@ -1315,7 +1315,7 @@ static void UpdateCssDetection(void) {
 }
 
 // ------------------ Enabled scan lists ------------------
-static void BuildEnabledScanLists(char *buf, size_t buflen) {
+/* static void BuildEnabledScanLists(char *buf, size_t buflen) {
     buf[0] = '\0';
     bool first = true;
     for (int i = 0; i < 15; i++) {
@@ -1327,15 +1327,15 @@ static void BuildEnabledScanLists(char *buf, size_t buflen) {
             first = false;
         }
     }
-}
+} */
 
 static void DrawF(uint32_t f) {
     if (f < 1400000 || f > 130000000) return;
     char freqStr[18];
     FormatFrequency(f, freqStr, sizeof(freqStr));
     UpdateCssDetection();
-    char enabledLists[64];
-    BuildEnabledScanLists(enabledLists, sizeof(enabledLists));
+    //char enabledLists[64];
+    //BuildEnabledScanLists(enabledLists, sizeof(enabledLists));
     f = HFreqs[historyListIndex];
     uint16_t channelFd = BOARD_gMR_fetchChannel(f);
     isKnownChannel = (channelFd != 0xFFFF);
@@ -1361,8 +1361,8 @@ static void DrawF(uint32_t f) {
               ReadChannelName(channelFd,channelName);
               gNextTimeslice_1s = 0;
             }
-            if (enabledLists[0]) {
-                    len = sprintf(prefix, "S%s ", enabledLists);
+            if (ScanListNumber[scanInfo.i] && ScanListNumber[scanInfo.i] <16) {
+                    len = sprintf(prefix, "S%d ", ScanListNumber[scanInfo.i]);
                     pos += len;
             } else {
                     len = sprintf(prefix, "ALL ");
