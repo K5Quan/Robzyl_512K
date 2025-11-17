@@ -557,6 +557,8 @@ typedef struct HistoryStruct {
 } HistoryStruct;
 
 #ifdef ENABLE_EEPROM_512K
+static bool historyLoaded = false; // flaga stanu wczytania histotii spectrum
+
 void ReadHistory(void) {
     HistoryStruct History = {0};
     for (uint16_t position = 0; position < HISTORY_SIZE; position++) {
@@ -2708,8 +2710,10 @@ static void LoadSettings()
   BK4819_WriteRegister(BK4819_REG_43, eepromData.R43);
   BK4819_WriteRegister(BK4819_REG_2B, eepromData.R2B);
 #ifdef ENABLE_EEPROM_512K
-if (gRequestedSpectrumState ==0) //only read once
-  ReadHistory();
+  if (!historyLoaded) {
+     ReadHistory();
+     historyLoaded = true;
+  }
 #endif
 }
 
