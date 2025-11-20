@@ -113,10 +113,6 @@ void SCANNER_Start(bool singleFreq)
 
 	RADIO_SetupRegisters(true);
 
-#ifdef ENABLE_NOAA
-	gIsNoaaMode = false;
-#endif
-
 	if (gScanSingleFrequency) {
 		gScanCssState  = SCAN_CSS_STATE_SCANNING;
 		gScanFrequency = gTxVfo->pRX->Frequency;

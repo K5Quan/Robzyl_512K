@@ -594,7 +594,7 @@ void APP_Update(void)
 
 			// go back to sleep
 
-			gPowerSave_10ms = gEeprom.BATTERY_SAVE * 10;
+			gPowerSave_10ms = gEeprom.BATTERY_SAVE * 20; //TEST KOLYAN
 			gRxIdleMode     = true;
 
 			BK4819_Sleep();

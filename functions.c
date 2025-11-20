@@ -111,7 +111,7 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
 			break;
 
 		case FUNCTION_POWER_SAVE:
-			gPowerSave_10ms            = gEeprom.BATTERY_SAVE * 10;
+			gPowerSave_10ms            = gEeprom.BATTERY_SAVE * 20;
 			gPowerSaveCountdownExpired = false;
 
 			gRxIdleMode = true;

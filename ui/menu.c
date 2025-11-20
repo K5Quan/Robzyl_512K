@@ -68,6 +68,7 @@ const t_menu_item MenuList[] =
 	{"TxODir",  MENU_SFT_D         },
 	{"TxOffs",  MENU_OFFSET        },
 	{"RxOffs",  MENU_RX_OFFSET     },
+	{"BatSav",  MENU_SAVE          },
 	// hidden menu items from here on
 	// enabled if pressing upper side button at power-on
 	{"Reset",   MENU_RESET         },
@@ -83,7 +84,6 @@ const t_menu_item MenuList[] =
 	{"BatTxt",  MENU_BAT_TXT       },	
 	{"ChDele",  MENU_DEL_CH        },
 	{"ChName",  MENU_MEM_NAME      },	
-	{"BatSav",  MENU_SAVE          },
 	{"",        0xff               }  // end of list - DO NOT delete or move this
 };
 

@@ -8,7 +8,7 @@
 #include "action.h"
 #include "bands.h"
 #include "ui/main.h"
-#include "debugging.h"
+//#include "debugging.h"
 
 /*	
           /////////////////////////DEBUG//////////////////////////
@@ -59,7 +59,7 @@ uint8_t HCount[HISTORY_SIZE]= {0};
 bool HBlacklisted[HISTORY_SIZE]= {0};
 
 /////////////////////////////Parameters://///////////////////////////
-//SEE HERE parametersSelectedIndex
+//SEE parametersSelectedIndex
 // see GetParametersText
 uint8_t DelayRssi = 4;                // case 0       
 uint16_t SpectrumDelay = 0;           // case 1      
@@ -74,14 +74,24 @@ uint32_t gScanRangeStop = 13000000;   // case 5
 bool Backlight_On_Rx = 0;             // case 10        
 bool gCounthistory = 1;               // case 11      
 //ClearHistory                        // case 12      
-//RAM                                 // case 13      
-#define PARAMETER_COUNT 14
+//RAM                                 // case 13     
+uint16_t SpectrumSleepMs = 0;         // case 14
+#define PARAMETER_COUNT 15
 ////////////////////////////////////////////////////////////////////
 uint32_t spectrumElapsedCount = 0;
+uint32_t SpectrumPauseCount = 0;
+bool SPECTRUM_PAUSED;
 uint8_t IndexMaxLT = 0;
 static const char *labels[] = {"OFF","10s","30s", "1m", "5m", "10m", "20m", "30m"};
-#define LISTEN_STEP_COUNT 7
 const uint16_t listenSteps[] = {0, 10, 30, 60, 300, 600, 1200, 1800}; //in s
+#define LISTEN_STEP_COUNT 7
+
+uint8_t IndexPS = 0;
+static const char *labelsPS[] = {"OFF","100ms","500ms", "1s", "5s", "10s", "20s", "30s"};
+const uint16_t PS_Steps[] = {0, 10, 50, 100, 500, 1000, 2000, 3000}; //in 10 ms
+#define PS_STEP_COUNT 7
+
+
 static uint32_t lastReceivingFreq = 0;
 bool gIsPeak = false;
 bool historyListActive = false;
@@ -782,7 +792,15 @@ static void ToggleRX(bool on) {
 
 // Scan info
 static void ResetScanStats() {
-  scanInfo.rssiMax = scanInfo.rssiMin + 5 ; 
+  static int previousResetMax = 0;
+  if (previousResetMax == 0) {
+    previousResetMax = scanInfo.rssiMax;
+  }
+  if (scanInfo.rssiMax > previousResetMax) {
+    previousResetMax = scanInfo.rssiMax;
+  } else {
+    scanInfo.rssiMax = (scanInfo.rssiMax + previousResetMax) / 2;
+  }
 }
 
 bool SingleBandCheck(void) {
@@ -934,20 +952,16 @@ static void UpdateDBMaxAuto() {
   static uint8_t z = 3;
   int newDbMax;
     if (scanInfo.rssiMax > 0) {
-        newDbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -120, 10);
+        newDbMax = Rssi2DBm(scanInfo.rssiMax);
 
-        if (newDbMax > settings.dbMax + z) {
-            settings.dbMax = settings.dbMax + z;   // montée limitée
-        } else if (newDbMax < settings.dbMax - z) {
+        if (newDbMax > settings.dbMax) {
+            settings.dbMax = settings.dbMax;
+        } else if (newDbMax < settings.dbMax -z) {
             settings.dbMax = settings.dbMax - z;   // descente limitée
-        } else {
-            settings.dbMax = newDbMax;              // suivi normal
-        }
+        } 
     }
 
-    if (scanInfo.rssiMin > 0) {
-        settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -80);
-    }
+    if (scanInfo.rssiMin > 0) {settings.dbMin = Rssi2DBm(scanInfo.rssiMin);}
 }
 
 
@@ -1820,7 +1834,16 @@ static void OnKeyDown(uint8_t key) {
 
                   case 13: // RAM
                       break;
-
+                  case 14: // SpectrumSleepMs
+                        if (isKey3) {
+                          IndexPS++;
+                          if (IndexPS > PS_STEP_COUNT) IndexPS = 0;
+                        } else {
+                          if (IndexPS == 0) IndexPS = PS_STEP_COUNT;
+                          else IndexPS--;
+                        }
+                        SpectrumSleepMs = PS_Steps[IndexPS];
+                      break;
               }
             
 
@@ -2241,6 +2264,7 @@ static void RenderStatus() {
 static void RenderSpectrum() {
     if (classic) {
         DrawNums();
+        UpdateDBMaxAuto();
         DrawSpectrum();
     }
     if(isListening) {
@@ -2248,7 +2272,6 @@ static void RenderSpectrum() {
     else {
       if (SpectrumMonitor)DrawF(HFreqs[historyListIndex]);
       else DrawF(scanInfo.f);
-      UpdateDBMaxAuto();    
     }
 }
 
@@ -2401,9 +2424,9 @@ if (kbd.counter == 2 || (kbd.counter > 22 && (kbd.counter % 20 == 0))) {
     }
 }
 
-
 static void UpdateScan() {
-  if(gIsPeak || SpectrumMonitor || WaitSpectrum) return;
+  if(SPECTRUM_PAUSED || gIsPeak || SpectrumMonitor || WaitSpectrum) return;
+
   SetF(scanInfo.f);
   Measure();
   if(gIsPeak || SpectrumMonitor || WaitSpectrum) return;
@@ -2412,8 +2435,15 @@ static void UpdateScan() {
     NextScanStep();
     return;
   }
-  newScanStart = true;
+  newScanStart = true; //Scan end
+
+  BK4819_Sleep();
+	BK4819_ToggleGpioOut(BK4819_GPIO0_PIN28_RX_ENABLE, false);
+  SPECTRUM_PAUSED = true;
+  SpectrumPauseCount = SpectrumSleepMs;
+
 }
+
 
 static void UpdateListening(void) { // called every 10ms
     static uint32_t stableFreq = 1;
@@ -2508,6 +2538,16 @@ static void Tick() {
     HandleUserInput();
     gNextTimeslice_10ms = 0;
     if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); 
+    if(SpectrumPauseCount) SpectrumPauseCount--;
+
+  }
+
+  if (SPECTRUM_PAUSED && SpectrumPauseCount == 0) {
+      // fin de la pause
+      SPECTRUM_PAUSED = false;
+      BK4819_ToggleGpioOut(BK4819_GPIO0_PIN28_RX_ENABLE, true);
+      BK4819_RX_TurnOn();
+      SYSTEM_DelayMs(10);
   }
 
   if(!isListening && gIsPeak && !SpectrumMonitor) {
@@ -2531,6 +2571,7 @@ static void Tick() {
     Render();
   } 
 }
+
 
 void APP_RunSpectrum(uint8_t Spectrum_state)
 {
@@ -2662,6 +2703,7 @@ typedef struct {
     uint16_t R2B;
     uint16_t SpectrumDelay;
     uint8_t IndexMaxLT;
+    uint8_t IndexPS;
     bool Backlight_On_Rx;
 } SettingsEEPROM;
 
@@ -2693,8 +2735,13 @@ static void LoadSettings()
   validScanListCount = 0;
   ShowLines = eepromData.ShowLines;
   SpectrumDelay = eepromData.SpectrumDelay;
+  
   IndexMaxLT = eepromData.IndexMaxLT;
   MaxListenTime = listenSteps[IndexMaxLT];
+  
+  IndexPS = eepromData.IndexPS;
+  SpectrumSleepMs = PS_Steps[IndexPS];
+
   Backlight_On_Rx = eepromData.Backlight_On_Rx;
   ChannelAttributes_t att;
   for (int i = 0; i < MR_CHANNEL_LAST+1; i++) {
@@ -2734,6 +2781,7 @@ static void SaveSettings()
   eepromData.ShowLines = ShowLines;
   eepromData.SpectrumDelay = SpectrumDelay;
   eepromData.IndexMaxLT = IndexMaxLT;
+  eepromData.IndexPS = IndexPS;
   eepromData.Backlight_On_Rx = Backlight_On_Rx;
   for (int i = 0; i < 32; i++) { 
       eepromData.BPRssiTriggerLevelUp[i] = BPRssiTriggerLevelUp[i];
@@ -2797,6 +2845,8 @@ static void ClearSettings()
   ShowLines = 2;
   SpectrumDelay = 0;
   MaxListenTime = 0;
+  IndexMaxLT = 0;
+  IndexPS = 0;
   Backlight_On_Rx = 0;
   for (int i = 0; i < 32; i++) { 
       BPRssiTriggerLevelUp[i] = 5;
@@ -2812,19 +2862,8 @@ static void ClearSettings()
   BK4819_WriteRegister(BK4819_REG_3C, 20360);
   BK4819_WriteRegister(BK4819_REG_43, 13896);
   BK4819_WriteRegister(BK4819_REG_2B, 49152);
-
-  //Clear History
-  memset(HFreqs,0,sizeof(HFreqs));
-  memset(HCount,0,sizeof(HCount));
-  memset(HBlacklisted,0,sizeof(HBlacklisted));
-  historyListIndex = 0;
-  historyScrollOffset = 0;
-  indexFs = HISTORY_SIZE;
-  #ifdef ENABLE_EEPROM_512K
-  WriteHistory();
-  #endif
-  indexFs = 0;
-  SaveSettings(); 
+  ClearHistory();
+  //SaveSettings(); 
 }
 
 
@@ -2948,6 +2987,10 @@ static void GetParametersText(uint8_t index, char *buffer) {
         case 13:
             uint32_t free = free_ram_bytes();
             sprintf(buffer, "FREE RAM %uB", (unsigned)free);
+            break;
+
+        case 14:
+            sprintf(buffer, "PowerSave: %s", labelsPS[IndexPS]);
             break;
 
         default:

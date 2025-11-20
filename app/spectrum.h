@@ -182,7 +182,6 @@ typedef struct ScanInfo {
   uint16_t rssi, rssiMin, rssiMax;
   uint32_t f;
   uint16_t scanStep,i;
-  uint16_t measurementsCount;
 } ScanInfo;
 
 typedef struct PeakInfo {
