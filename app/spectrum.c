@@ -790,18 +790,10 @@ static void ToggleRX(bool on) {
 }
 
 
-// Scan info
 static void ResetScanStats() {
-  static int previousResetMax = 0;
-  if (previousResetMax == 0) {
-    previousResetMax = scanInfo.rssiMax;
-  }
-  if (scanInfo.rssiMax > previousResetMax) {
-    previousResetMax = scanInfo.rssiMax;
-  } else {
-    scanInfo.rssiMax = (scanInfo.rssiMax + previousResetMax) / 2;
-  }
+  scanInfo.rssiMax = scanInfo.rssiMin + 20 ; 
 }
+
 
 bool SingleBandCheck(void) {
     int count = 0;
@@ -947,20 +939,24 @@ LogUart(str); */
 /////////////////////////DEBUG//////////////////////////  
 }
 
-uint16_t PrevMax = 500;
-uint16_t PrevMin = 500;
-#define z 2
 static void UpdateDBMaxAuto() {
-    if (isListening) return;
-    if (scanInfo.rssiMax < PrevMax - z) {PrevMax -= z;}
-    else if (scanInfo.rssiMax > PrevMax) {PrevMax = scanInfo.rssiMax;}
-    settings.dbMax = Rssi2DBm(PrevMax);
-    if (scanInfo.rssiMin > PrevMin + z) {PrevMin += z;}
-    else if (scanInfo.rssiMin < PrevMin) {PrevMin = scanInfo.rssiMin;}
-    settings.dbMax = Rssi2DBm(PrevMax);
-    settings.dbMin = Rssi2DBm(PrevMin);
-    scanInfo.rssiMax = 0;
-    scanInfo.rssiMin = 0xFFFF;
+  static uint8_t z = 3;
+  int newDbMax;
+    if (scanInfo.rssiMax > 0) {
+        newDbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -60, 10);
+
+        if (newDbMax > settings.dbMax + z) {
+            settings.dbMax = settings.dbMax + z;   // montée limitée
+        } else if (newDbMax < settings.dbMax - z) {
+            settings.dbMax = settings.dbMax - z;   // descente limitée
+        } else {
+            settings.dbMax = newDbMax;              // suivi normal
+        }
+    }
+
+    if (scanInfo.rssiMin > 0) {
+        settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -80);
+    }
 }
 
 
