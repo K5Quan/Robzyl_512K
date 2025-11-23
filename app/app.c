@@ -783,9 +783,31 @@ void APP_TimeSlice10ms(void)
         getScreenShot(false);
     #endif
 	
+		// Handle FM radio tasks
+	if (gFmRadioMode)
+	{
+		FM_CheckScan();
+	}
+	
+	// The gFmRadioCountdown_500ms is a flawed leftover, we handle its logic in APP_TimeSlice500ms
+	// but without blocking other tasks. Do not use it here to block execution.
+
+	FlashlightTimeSlice();
+
+	if (gFmRadioMode && gFM_RestoreCountdown_10ms > 0)
+	{
+		if (--gFM_RestoreCountdown_10ms == 0)
+		{	// switch back to FM radio mode
+			FM_Start();
+			GUI_SelectNextDisplay(DISPLAY_FM);
+		}
+	}
+	SCANNER_TimeSlice10ms();
+	CheckKeys();
+	
 	// Skipping authentic device checks
 
-		if (gFmRadioMode && gFmRadioCountdown_500ms > 0)   // 1of11
+/* 		if (gFmRadioMode && gFmRadioCountdown_500ms > 0)   // 1of11
 			return;
 
 
@@ -800,7 +822,7 @@ void APP_TimeSlice10ms(void)
 		}
 	}
 	SCANNER_TimeSlice10ms();
-	CheckKeys();
+	CheckKeys(); */
 }
 
 void cancelUserInputModes(void)
