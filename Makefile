@@ -1,5 +1,5 @@
 AUTHOR_STRING := ""
-VERSION_STRING := V5.5.7
+VERSION_STRING := V5.5.8
 
 # compile options (see README.md for descriptions)
 # 0 = disable
@@ -41,6 +41,8 @@ ENABLE_RU_BAND							:= 0
 ENABLE_SCREENSHOT		  				:= 0
 ENABLE_SCANLIST_SHOW_DETAIL		   		:= 1
 ENABLE_EEPROM_512K				   		:= 0
+ENABLE_4732								:= 1
+
 
 
 #############################################################
@@ -83,6 +85,9 @@ endif
 OBJS += driver/eeprom.o
 ifeq ($(ENABLE_OVERLAY),1)
 	OBJS += driver/flash.o
+endif
+ifeq ($(ENABLE_4732),1)
+        OBJS += driver/si473x.o
 endif
 OBJS += driver/gpio.o
 OBJS += driver/i2c.o
@@ -343,6 +348,9 @@ ifeq ($(ENABLE_EEPROM_512K),1)
 	CFLAGS  += -DENABLE_EEPROM_512K
 endif
 
+ifeq ($(ENABLE_4732),1)
+	CFLAGS  += -DENABLE_4732
+endif
 
 LDFLAGS =
 ifeq ($(ENABLE_CLANG),0)
