@@ -990,6 +990,11 @@ static void Measure() {
         gIsPeak      = false;
         isFirst      = false;
     }
+    if (settings.rssiTriggerLevelUp == 50 && rssi > previousRssi + 15) {
+      peak.f = scanInfo.f;
+      peak.i = scanInfo.i;
+      FillfreqHistory();
+    }
 
     if (!gIsPeak && rssi > previousRssi + settings.rssiTriggerLevelUp) {
         SYSTEM_DelayMs(10);
@@ -998,7 +1003,7 @@ static void Measure() {
           peak.f = scanInfo.f;
           peak.i = scanInfo.i;
         }
-        if (settings.rssiTriggerLevelUp < 50) gIsPeak = true;
+        if (settings.rssiTriggerLevelUp < 50) {gIsPeak = true;}
     } 
     if (!gIsPeak || !isListening)
         previousRssi = rssi;
@@ -1654,6 +1659,7 @@ static void OnKeyDown(uint8_t key) {
           if (gHistoryScan) {
               ShowOSDPopup("SCAN HISTORY ON");
               gIsPeak = false; // Force le redémarrage si on était bloqué
+              SpectrumMonitor = 0;
           } else {
               ShowOSDPopup("SCAN HISTORY OFF");
           }
