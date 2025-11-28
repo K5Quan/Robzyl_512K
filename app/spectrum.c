@@ -3173,7 +3173,7 @@ static void GetParametersText(uint8_t index, char *buffer) {
             break;
 
         case 12:
-            sprintf(buffer, "CLR HIST:1KBL 3ALL");
+            sprintf(buffer, "CLEAR HISTORY: 3");
             break;
 
         case 13:
