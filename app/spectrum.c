@@ -823,7 +823,7 @@ void FillfreqHistory(void)
     uint32_t f = peak.f;
     if (f < 1400000 || f > 130000000) return;
 
-    for (uint8_t i = 0; i < HISTORY_SIZE; i++) {
+    for (uint8_t i = 0; i < indexFs; i++) {
         if (HFreqs[i] == f) {
             // Gestion du compteur
             if (gCounthistory) {
@@ -854,6 +854,12 @@ void FillfreqHistory(void)
     if (indexFs < HISTORY_SIZE) indexFs++;
     
     if (indexFs >= HISTORY_SIZE) {indexFs = 0;}
+/*     for (uint8_t i = 0; i < indexFs; i++) {
+        char str[64];
+        sprintf(str, "%d %d %lu\r\n", i, indexFs, HFreqs[i]);
+        LogUart(str);
+    } */
+
 } 
 
 static void ToggleRX(bool on) {
@@ -1822,6 +1828,7 @@ static void OnKeyDown(uint8_t key) {
                     SetState(SPECTRUM);
                     ResetModifiers();
                     RelaunchScan();
+                    gForceModulation = 0; //Kolyan request release modulation
                 }
                 break;
 				
@@ -1829,6 +1836,7 @@ static void OnKeyDown(uint8_t key) {
                 SetState(SPECTRUM); // Return to scanning mode
                 ResetModifiers();
                 RelaunchScan(); 
+                gForceModulation = 0; //Kolyan request release modulation
                 break;
 #endif // ENABLE_SCANLIST_SHOW_DETAIL
         default:
@@ -2352,7 +2360,7 @@ void OnKeyDownStill(KEY_Code_t key) {
       case KEY_F:
       break;
       case KEY_5:
-        FreqInput();
+        //FreqInput();
       break;
       case KEY_0:
       break;
