@@ -62,7 +62,7 @@ static bool gHistoryScan = false; // Indicateur de scan de l'historique
 // see GetParametersText
 uint8_t DelayRssi = 4;                // case 0       
 uint16_t SpectrumDelay = 0;           // case 1      
-uint8_t MaxListenTime = 0;            // case 2
+uint16_t MaxListenTime = 0;           // case 2
 uint8_t PttEmission = 0;              // case 3      
 uint32_t gScanRangeStart = 1400000;   // case 4      
 uint32_t gScanRangeStop = 13000000;   // case 5      
@@ -854,11 +854,11 @@ void FillfreqHistory(void)
     if (indexFs < HISTORY_SIZE) indexFs++;
     
     if (indexFs >= HISTORY_SIZE) {indexFs = 0;}
-/*     for (uint8_t i = 0; i < indexFs; i++) {
+    for (uint8_t i = 0; i < indexFs; i++) {
         char str[64];
         sprintf(str, "%d %d %lu\r\n", i, indexFs, HFreqs[i]);
         LogUart(str);
-    } */
+    }
 
 } 
 
@@ -1639,9 +1639,7 @@ static void NextScanStep() {
 
 static uint8_t CountValidHistoryItems() {
     uint8_t count = 0;
-    for (uint8_t i = 0; i < HISTORY_SIZE; i++) {
-        if (HFreqs[i] != 0) count++;
-    }
+    for (uint16_t i = 0; i < HISTORY_SIZE; i++) {if (HFreqs[i]) count++;}
     return count;
 }
 
@@ -1670,7 +1668,8 @@ static void SetTrigger50(){
 }
 
 static void OnKeyDown(uint8_t key) {
-        BACKLIGHT_TurnOn();
+
+    if (!gBacklightCountdown) {BACKLIGHT_TurnOn(); return;}
   
   
     // NEW HANDLING: press of '4' key in SCAN_BAND_MODE
@@ -2208,26 +2207,17 @@ static void OnKeyDown(uint8_t key) {
         const char* modes[] = {"Normal", "Freq Lock", "Monitor"};
         sprintf(monitorText, "Mode: %s", modes[SpectrumMonitor]);
 	      ShowOSDPopup(monitorText);
-        //if (SpectrumMonitor > 0) SetF(HFreqs[historyListIndex]);
         if(SpectrumMonitor == 2) ToggleRX(1);
     break;
 
     case KEY_SIDE2:
     if (historyListActive) {
         HBlacklisted[historyListIndex] = !HBlacklisted[historyListIndex];
-        //char str[64] = "";sprintf(str, "%d %d \r\n", HBlacklisted[historyListIndex],historyListIndex );LogUart(str);
         if (HBlacklisted[historyListIndex]) {
             ShowOSDPopup("BL added");
         } else {
             ShowOSDPopup("BL removed");
         }
-/*         uint8_t count = CountValidHistoryItems();
-        historyListIndex++;
-        if (historyListIndex >= count)
-            historyListIndex = 0;  // reboucle au début
-
-        if (historyListIndex < historyScrollOffset)
-            historyScrollOffset = historyListIndex; */
         RenderHistoryList();
         gIsPeak = 0;
         ToggleRX(false);
@@ -2247,16 +2237,9 @@ static void OnKeyDown(uint8_t key) {
   case KEY_MENU: //History
       int validCount = 0;
       for (int k = 1; k < HISTORY_SIZE; k++) {
-          if (HFreqs[k] != 0) {
-              validCount++;
-          }
+          if (HFreqs[k]) {validCount++;}
       }
-      if (historyListActive == true) {
-          Last_Tuned_Freq = HFreqs[historyListIndex];
-      } /* else Last_Tuned_Freq = peak.f;
-      currentFreq = Last_Tuned_Freq;
-      if(scanInfo.f != Last_Tuned_Freq) SetF(Last_Tuned_Freq);
-      scanInfo.f = Last_Tuned_Freq; */
+      if (historyListActive == true) {Last_Tuned_Freq = HFreqs[historyListIndex];}
       SetState(STILL);      
   break;
 
@@ -2876,9 +2859,9 @@ void LoadValidMemoryChannels(void)
 #include "index.h"
 
 bool IsVersionMatching(void) {
-    uint8_t stored,app_version;
+    uint16_t stored,app_version;
     app_version = APP_VERSION;
-    EEPROM_ReadBuffer(0x1D08, &stored, 1);
+    EEPROM_ReadBuffer(0x1D08, &stored, 2);
     if (stored != APP_VERSION) EEPROM_WriteBuffer(0x1D08, &app_version);
     return (stored == APP_VERSION);
 }

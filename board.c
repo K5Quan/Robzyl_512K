@@ -512,7 +512,7 @@ void BOARD_EEPROM_Init(void)
 	gEeprom.SQUELCH_LEVEL        = (Data[1] < 10) ? Data[1] : 1;
 	gEeprom.TX_TIMEOUT_TIMER     = (Data[2] < 11) ? Data[2] : 1;
 	gEeprom.KEY_LOCK             = (Data[4] <  2) ? Data[4] : false;
-	gEeprom.MIC_SENSITIVITY      = (Data[7] <  5) ? Data[7] : 4;
+	gEeprom.MIC_SENSITIVITY      = (Data[7] <  5) ? Data[7] : 0;
 
 	// 0E78..0E7F
 	EEPROM_ReadBuffer(0x0E78, Data, 8);
