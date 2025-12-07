@@ -8,7 +8,7 @@
 #include "action.h"
 #include "bands.h"
 #include "ui/main.h"
-#include "debugging.h"
+//#include "debugging.h"
 
 /*	
           /////////////////////////DEBUG//////////////////////////
@@ -1543,7 +1543,10 @@ static void DrawF(uint32_t f) {
           GUI_DisplaySmallest(line3,  0, 20, true,true);
           ArrowLine = 3;
         }
-        
+      if (Fmax) {
+          FormatFrequency(Fmax, freqStr, sizeof(freqStr));
+          GUI_DisplaySmallest(freqStr,  50, Bottom_print, false,true);
+      }  
     } else {
         DrawMeter(6);
         if (StringCode[0]) {UI_PrintStringSmall(line1b, 1, 1, 0,1);}
@@ -1551,11 +1554,8 @@ static void DrawF(uint32_t f) {
         UI_PrintString(line2, 1, 1, 2, 8);
         UI_PrintString(line3b, 1, 1, 4, 8);
       }
-      sprintf(line3, "%d");
-      if (Fmax) {
-          FormatFrequency(Fmax, freqStr, sizeof(freqStr));
-          GUI_DisplaySmallest(freqStr,  50, 25, true,true);
-      }
+      
+      
 
       
 }

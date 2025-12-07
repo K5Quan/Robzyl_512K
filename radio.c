@@ -678,7 +678,7 @@ void RADIO_SetModulation(ModulationMode_t modulation)
 	
 	// HACK FIXME AM
 	
-	uint16_t uVar1 = BK4819_ReadRegister(0x31);
+	/* uint16_t uVar1 = BK4819_ReadRegister(0x31);
 	if(modulation != MODULATION_AM) {
 		BK4819_WriteRegister(0x31,uVar1 & 0xFFFFFFFE);
 		BK4819_WriteRegister(0x42,0x6B5A);
@@ -691,7 +691,7 @@ void RADIO_SetModulation(ModulationMode_t modulation)
 		BK4819_WriteRegister(0x2A,0x7434);
 		BK4819_WriteRegister(0x2B,0x0600);
 		BK4819_WriteRegister(0x2F,0x9990);
-	}
+	} */
 
 	BK4819_SetRegValue(afDacGainRegSpec, 0xF);
 	BK4819_WriteRegister(BK4819_REG_3D, modulation == MODULATION_SSB ? 0 : 0x2AAB);
