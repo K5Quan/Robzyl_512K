@@ -1311,6 +1311,10 @@ static void DrawStatus() {
       len = sprintf(&String[pos],"BD ");
 #endif
 
+#ifdef ENABLE_IN_BAND
+      len = sprintf(&String[pos],"IN ");
+#endif
+
 #ifdef ENABLE_PL_BAND
       len = sprintf(&String[pos],"PL ");
 #endif
@@ -3319,6 +3323,10 @@ static void RenderParametersSelect() {
 
 #ifdef ENABLE_FR_BAND
       static void RenderBandSelect() {RenderList("FRA BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+#endif
+
+#ifdef ENABLE_IN_BAND
+      static void RenderBandSelect() {RenderList("INT BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
 #endif
 
 #ifdef ENABLE_PL_BAND

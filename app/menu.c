@@ -237,6 +237,9 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_F1LONG:
 		case MENU_F2SHRT:
 		case MENU_F2LONG:
+			*pMin = 0;
+			*pMax = gSubMenu_SIDEFUNCTIONS_size-1;
+			break;
 		default:
 			return -1;
 	}

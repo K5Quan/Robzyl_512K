@@ -18,6 +18,20 @@
 
 
 
+#ifdef ENABLE_IN_BAND
+static const bandparameters BParams[32] = {
+    // BandName       Startfrequency    Stopfrequency   scanStep          modulationType
+    {"AIR 8.33k",     11800000,         13700000,       S_STEP_8_33kHz,   MODULATION_AM},
+    {"AIR MIL1",      13800000,         14400000,       S_STEP_25_0kHz,   MODULATION_AM},
+    {"AIR MIL2",      22500000,         24107500,       S_STEP_25_0kHz,   MODULATION_AM},
+    {"AIR MIL3",      33540000,         33970000,       S_STEP_25_0kHz,   MODULATION_AM},
+    {"PMR 446",       44600625,         44619375,       S_STEP_12_5kHz,   MODULATION_FM},
+    {"FRS",           46256250,         46772500,       S_STEP_5_0kHz,    MODULATION_FM},
+    {"MARINE",        15550000,         16202500,       S_STEP_25_0kHz,   MODULATION_FM},
+    {"CB",             2651500,          2830500,       S_STEP_5_0kHz,    MODULATION_AM},
+    }; 
+#endif
+
 #ifdef ENABLE_FR_BAND
 static const bandparameters BParams[32] = {
     // BandName       Startfrequency    Stopfrequency   scanStep          modulationType

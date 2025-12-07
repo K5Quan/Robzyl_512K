@@ -38,6 +38,7 @@ ENABLE_KO_BAND							:= 0
 ENABLE_CZ_BAND							:= 0
 ENABLE_TU_BAND							:= 0
 ENABLE_RU_BAND							:= 0
+ENABLE_IN_BAND							:= 0
 ENABLE_SCREENSHOT		  				:= 0
 ENABLE_SCANLIST_SHOW_DETAIL		   		:= 1
 ENABLE_EEPROM_512K				   		:= 0
@@ -334,6 +335,10 @@ endif
 
 ifeq ($(ENABLE_RU_BAND),1)
 	CFLAGS  += -DENABLE_RU_BAND
+endif
+
+ifeq ($(ENABLE_IN_BAND),1)
+	CFLAGS  += -DENABLE_IN_BAND
 endif
 
 ifeq ($(ENABLE_SCREENSHOT),1)
