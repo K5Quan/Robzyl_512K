@@ -52,7 +52,7 @@ void SCANNER_Stop(void)
 	if(SCANNER_IsScanning()) {
 		gVfoConfigureMode        = VFO_CONFIGURE_RELOAD;
 		gFlagResetVfos           = true;
-		gUpdateStatus            = true;
+		            
 		gCssBackgroundScan 			 = false;
 		gScanUseCssResult = false;
 		BK4819_StopScan();
@@ -121,7 +121,7 @@ void SCANNER_Start(bool singleFreq)
 		BK4819_PickRXFilterPathBasedOnFrequency(gScanFrequency);
 		BK4819_SetScanFrequency(gScanFrequency);
 
-		gUpdateStatus = true;
+		
 	}
 	else { //Close call
 		gScanCssState  = SCAN_CSS_STATE_OFF;
@@ -131,7 +131,7 @@ void SCANNER_Start(bool singleFreq)
 		//BK4819_PickRXFilterPathBasedOnFrequency(40000000);
 		BK4819_EnableFrequencyScan();
 
-		gUpdateStatus = true;
+		
 	}
 	gScanDelay_10ms        = scan_delay_10ms;
 	gScanCssResultCode     = 0xFF;
@@ -199,7 +199,7 @@ void SCANNER_TimeSlice10ms(void)
 				if(!gCssBackgroundScan)
 					GUI_SelectNextDisplay(DISPLAY_SCANNER);
 
-				gUpdateStatus          = true;
+				          
 			}
 			gScanDelay_10ms = scan_delay_10ms;
 			break;
@@ -221,7 +221,7 @@ void SCANNER_TimeSlice10ms(void)
 					gScanCssResultType = CODE_TYPE_DIGITAL;
 					gScanCssState      = SCAN_CSS_STATE_FOUND;
 					gScanUseCssResult  = true;
-					gUpdateStatus      = true;
+					      
 				}
 			}
 			else if (scanResult == BK4819_CSS_RESULT_CTCSS) {
@@ -231,7 +231,7 @@ void SCANNER_TimeSlice10ms(void)
 					++scanHitCount;
 					gScanCssState      = SCAN_CSS_STATE_FOUND;
 					gScanUseCssResult  = true;
-					gUpdateStatus      = true;
+					      
 					gScanCssResultType = CODE_TYPE_CONTINUOUS_TONE;
 					gScanCssResultCode = Code;
 				}
@@ -268,7 +268,7 @@ void SCANNER_TimeSlice500ms(void)
 			else
 				gScanCssState = SCAN_CSS_STATE_FAILED;
 
-			gUpdateStatus = true;
+			
 		}
 		gUpdateDisplay = true;
 	}

@@ -63,7 +63,7 @@ void FUNCTION_Init(void)
 	gFoundCTCSSCountdown_10ms          = 0;
 	gFoundCDCSSCountdown_10ms          = 0;
 	gEndOfRxDetectedMaybe              = false;
-	gUpdateStatus = true;
+	
 }
 
 void FUNCTION_Select(FUNCTION_Type_t Function)
@@ -99,7 +99,7 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
 			#endif
 			
 
-			gUpdateStatus = true;
+			
 			return;
 
 		case FUNCTION_MONITOR:
@@ -121,7 +121,7 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
 
 			BK4819_ToggleGpioOut(BK4819_GPIO0_PIN28_RX_ENABLE, false);
 
-			gUpdateStatus = true;
+			
 
 			if (gScreenToDisplay != DISPLAY_MENU)     // 1of11 .. don't close the menu
 				GUI_SelectNextDisplay(DISPLAY_MAIN);
@@ -130,7 +130,7 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
 
 		case FUNCTION_TRANSMIT:
 			if (gFmRadioMode)BK1080_Init(0, false);
-			gUpdateStatus = true;
+			
 
 			GUI_DisplayScreen();
 

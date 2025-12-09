@@ -159,7 +159,7 @@ void Main(void)
 
 		GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
 
-		gUpdateStatus = true;
+		
 
 		// ******************
 	}

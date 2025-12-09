@@ -174,7 +174,6 @@ extern bool                  gEnableSpeaker;
 extern uint8_t               gKeyInputCountdown;
 extern uint8_t               gKeyLockCountdown;
 extern bool                  bIsInLockScreen;
-extern uint8_t               gUpdateStatus;
 extern uint8_t               gFoundCTCSS;
 extern uint8_t               gFoundCDCSS;
 extern bool                  gEndOfRxDetectedMaybe;

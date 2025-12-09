@@ -1,5 +1,5 @@
 AUTHOR_STRING := ""
-VERSION_STRING := V5.5.24
+VERSION_STRING := V5.5.25
 
 # compile options (see README.md for descriptions)
 # 0 = disable

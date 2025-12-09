@@ -44,7 +44,7 @@ static void MAIN_Key_STAR(bool closecall)
 	if (gCurrentFunction == FUNCTION_TRANSMIT)
 		return;
 	gWasFKeyPressed          = false;
-	gUpdateStatus            = true;		
+	            		
 	SCANNER_Start(closecall);
 	gRequestDisplayScreen = DISPLAY_SCANNER;
 }
@@ -65,7 +65,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 		case KEY_1:
 			if (!IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE)) {
 				gWasFKeyPressed = false;
-				gUpdateStatus   = true;
+				   
 
 #ifdef ENABLE_COPY_CHAN_TO_VFO
 				if (gEeprom.VFO_OPEN && !gCssBackgroundScan)
@@ -143,7 +143,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 
 
 		default:
-			gUpdateStatus   = true;
+			   
 			gWasFKeyPressed = false;
 			break;
 	}
@@ -165,7 +165,7 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 					gRequestDisplayScreen = DISPLAY_MAIN;
 				}
 				gWasFKeyPressed = false;
-				gUpdateStatus   = true;
+				   
 				processFKeyFunction(Key, false);
 			}
 		}
@@ -254,7 +254,7 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	}
 
 	gWasFKeyPressed = false;
-	gUpdateStatus   = true;
+	   
 
 	processFKeyFunction(Key, true);
 }

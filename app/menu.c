@@ -359,7 +359,7 @@ void MENU_AcceptSetting(void)
 		case MENU_RX_OFFSET:
 			gEeprom.RX_OFFSET = MIN(gSubMenuSelection, RX_OFFSET_MAX);
 			gFlagReconfigureVfos = true;
-			gUpdateStatus        = true;
+			        
 			break;
 
 		case MENU_W_N:

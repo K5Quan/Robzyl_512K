@@ -76,7 +76,7 @@ void GUI_SelectNextDisplay(GUI_DisplayType_t Display)
 		gAskToSave           = false;
 		gAskToDelete         = false;
 		gWasFKeyPressed      = false;
-		gUpdateStatus        = true;
+		        
 	}
 
 	gScreenToDisplay = Display;

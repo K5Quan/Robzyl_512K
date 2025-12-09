@@ -39,9 +39,6 @@ void UI_DisplayStatus()
 	uint8_t     *line = gStatusLine;
 	unsigned int x    = 0;
 	unsigned int x1   = 0;
-	
-	gUpdateStatus = false;
-	
 	memset(gStatusLine, 0, sizeof(gStatusLine));
 
 	// **************

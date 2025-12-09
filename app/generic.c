@@ -64,7 +64,7 @@ void GENERIC_Key_F(bool bKeyPressed, bool bKeyHeld)
 
 			if (gWasFKeyPressed)
 				gKeyInputCountdown = key_input_timeout_500ms;
-			gUpdateStatus = true;
+			
 		}
 	}
 	else // short pressed
@@ -150,7 +150,7 @@ done:
 	gPttDebounceCounter = 0;
 	if (gScreenToDisplay != DISPLAY_MENU && gRequestDisplayScreen != DISPLAY_FM)     // 1of11 .. don't close the menu
 		gRequestDisplayScreen = DISPLAY_MAIN;
-	gUpdateStatus  = true;
+	  
 	gUpdateDisplay = true;
 
 	//done tx - restore squelch here

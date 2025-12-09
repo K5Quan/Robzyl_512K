@@ -52,7 +52,7 @@ void FM_TurnOff(void)
 
 	BK1080_Init(0, false);
 
-	gUpdateStatus  = true;
+	  
 }
 
 static void Key_EXIT()
@@ -112,6 +112,6 @@ void FM_Start(void)
 	gDualWatchActive     = false;
 
 	gEnableSpeaker       = true;
-	gUpdateStatus        = true;
+	        
 }
 

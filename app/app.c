@@ -358,7 +358,6 @@ void APP_StartListening(FUNCTION_Type_t Function)
 	if (gSetting_backlight_on_tx_rx >= BACKLIGHT_ON_TR_RX)
 		BACKLIGHT_TurnOn();
 	gTxVfoIsActive = true; 
-	gUpdateStatus    = true;
 	// AF gain - original QS values
 	// if (gTxVfo->Modulation != MODULATION_FM){
 	// 	BK4819_WriteRegister(BK4819_REG_48, 0xB3A8);
@@ -385,7 +384,7 @@ void APP_StartListening(FUNCTION_Type_t Function)
 	else
 		gUpdateDisplay = true;
 
-	gUpdateStatus = true;
+	
 }
 
 uint32_t APP_SetFrequencyByStep(VFO_Info_t *pInfo, int8_t direction)
@@ -729,9 +728,11 @@ void APP_TimeSlice10ms(void)
 		gUpdateDisplay = false;
 		GUI_DisplayScreen();
 	}
-
-	if (gUpdateStatus)
+	static uint8_t DisplayStatusCountdown = 20;
+	if (!DisplayStatusCountdown--){
 		UI_DisplayStatus();
+		DisplayStatusCountdown = 20;
+	}
 
 	#ifdef ENABLE_SCREENSHOT
         getScreenShot(false);
@@ -764,7 +765,7 @@ void cancelUserInputModes(void)
 		gWasFKeyPressed     = false;
 		gInputBoxIndex      = 0;
 		gKeyInputCountdown  = 0;
-		gUpdateStatus       = true;
+		       
 		gUpdateDisplay      = true;
 	}
 }
@@ -889,19 +890,15 @@ void APP_TimeSlice500ms(void)
 	}
 	
 	// regular display updates (once every 2 sec) - if need be
-	if ((gBatteryCheckCounter & 3) == 0)
-	{
-		if (gSetting_battery_text > 0)
-			gUpdateStatus = true;
-	}
-		if (gAskToSave && !gCssBackgroundScan)
+	
+	if (gAskToSave && !gCssBackgroundScan)
 	{
 		{
 			if (gEeprom.AUTO_KEYPAD_LOCK && gKeyLockCountdown > 0 && gScreenToDisplay != DISPLAY_MENU)
 			{
 				if (--gKeyLockCountdown == 0)
 					gEeprom.KEY_LOCK = true;     // lock the keyboard
-				gUpdateStatus = true;            // lock symbol needs showing
+				            // lock symbol needs showing
 			}
 
 			if (exit_menu)
@@ -919,7 +916,7 @@ void APP_TimeSlice500ms(void)
 				gAskToSave       = false;
 				gAskToDelete     = false;
 
-				gUpdateStatus    = true;
+				    
 				gUpdateDisplay   = true;
 
 				{
@@ -1134,7 +1131,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	if (gWasFKeyPressed && (Key == KEY_PTT || Key == KEY_EXIT || Key == KEY_SIDE1 || Key == KEY_SIDE2))
 	{	// cancel the F-key
 		gWasFKeyPressed = false;
-		gUpdateStatus   = true;
+		   
 	}
 
 	if (!bFlag)
@@ -1239,7 +1236,7 @@ Skip:
 			gFlagSaveSettings = 1;
 
 		gRequestSaveSettings = false;
-		gUpdateStatus        = true;
+		        
 	}
 
 	if (gRequestSaveVFO)
