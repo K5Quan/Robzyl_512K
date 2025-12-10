@@ -37,7 +37,7 @@ center_line_t center_line = CENTER_LINE_NONE;
 
 // ***************************************************************************
 
-static void DrawSmallAntennaAndBars(uint8_t *p, unsigned int level)
+static void DrawSmallAntennaAndBars(uint8_t *p, unsigned int level) //ФУНКЦИЯ АНТЕННЫ
 {
 	if(level>6)
 		level = 6;
@@ -52,21 +52,25 @@ static void DrawSmallAntennaAndBars(uint8_t *p, unsigned int level)
 
 void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level)
 {
-	const char hollowBar[] = {
-		0b01111111,
-		0b01111111,
-		0b01111111,
-		0b01111111
-	};
+    // Замененный массив, представляющий полностью залитый прямоугольник (4x7 пикселей)
+    const char filledBar[] = {
+    0b01111111,  // 2-я строка (была 1-я)
+    0b01111111,  // 3-я
+    0b01111111,  // 4-я
+    0b01111111   // 5-я строка (была 6-я)
+    };
 
-	uint8_t *p_line = gFrameBuffer[line];
-	memset(p_line, 0, LCD_WIDTH);
-	level = MIN(level, 13);
+    uint8_t *p_line = gFrameBuffer[line];
+    // Если вам не нужно очищать всю строку перед отрисовкой, эту строку можно удалить.
+    // Если она нужна, оставьте:
+    memset(p_line, 0, LCD_WIDTH); 
+    
+    level = MIN(level, 13);
 
-	for(uint8_t i = 0; i < level; i++) {
-		memcpy(p_line + (xpos + i * 5), &hollowBar, ARRAY_SIZE(hollowBar));
-		}
-//	ST7565_BlitFullScreen();
+    for(uint8_t i = 0; i < level; i++) {
+        // Копируем новый залитый массив
+        memcpy(p_line + (xpos + i * 5), filledBar, ARRAY_SIZE(filledBar));
+    }
 }
 
 #ifdef ENABLE_AUDIO_BAR
@@ -88,6 +92,8 @@ unsigned int sqrt16(unsigned int value)
 	return sqrti;
 }
 
+
+//АУДИОБАР ПРИ ПЕРЕДАЧЕ (микрофонный индикатор) — центр экрана
 void UI_DisplayAudioBar(void)
 {
 	if(gLowBattery && !gLowBatteryConfirmed) return;
@@ -102,11 +108,14 @@ void UI_DisplayAudioBar(void)
 	// make non-linear to make more sensitive at low values
 	const unsigned int level      = MIN(voice_amp * 8, 65535u);
 	const unsigned int sqrt_level = MIN(sqrt16(level), 124u);
-	uint8_t bars = 13 * sqrt_level / 124;
-	DrawLevelBar(62, 1, bars);
+	uint8_t bars = 9 * sqrt_level / 124; //РАЗМЕР В СИМВОЛАХ
+	DrawLevelBar(62, 1, bars); //ПОЛОЖЕНИЕ БАРА
 }
 #endif
 
+
+
+// 12. S-МЕТР / ACF ПРИ ПРИЁМЕ
 void DisplayRSSIBar(const int16_t rssi)
 {	if (gCurrentFunction == FUNCTION_RECEIVE ||	gCurrentFunction == FUNCTION_MONITOR ||	gCurrentFunction == FUNCTION_INCOMING) {
 			const unsigned int line = 1;
@@ -162,12 +171,12 @@ void UI_DisplayMain(void)
 		{
 			const bool inputting = (gInputBoxIndex == 0 ) ? false : true;
 			if (!inputting)
-				sprintf(String, "M%u:", gEeprom.ScreenChannel + 1);
+				sprintf(String, "M%u", gEeprom.ScreenChannel + 1);
 			else
-				sprintf(String, "M%.3s:", INPUTBOX_GetAscii());  // show the input text
-			UI_PrintString(String , 1, 0, line+2 ,8);
-		//Тот же шрифт 6×8, то же место (4 пикселя слева, line+2)
-		//	UI_PrintStringSmall(String, 1, 0, line + 3, 0);
+				sprintf(String, "M%.3s", INPUTBOX_GetAscii());  // show the input text
+			//UI_PrintString(String , 1, 0, line+2 ,8);
+			//	UI_PrintStringSmall(String, 1, 0, line + 3, 0); //Тот же шрифт 6×8, то же место (4 пикселя слева, line+2)
+			UI_PrintString(String, 18 - (strlen(String) * 4), 0, line + 2, 8); // по центру
 		}
 		
 
@@ -182,33 +191,37 @@ void UI_DisplayMain(void)
 			UI_PrintString(state_list[state], 31, 0, line+2, 8);
 		}
 		
-		//if (gInputBoxIndex > 0 && IS_FREQ_CHANNEL(gEeprom.ScreenChannel)){	// user entering a frequency ЧАСТОТА 1000
-		if (gInputBoxIndex > 0 && gEeprom.ScreenChannel > MR_CHANNEL_LAST){	// user entering a frequency
-				const char * ascii = INPUTBOX_GetAscii();
-				bool isGigaF = frequency>=100000000;
-				sprintf(String, "%.*s.%.3s", 3 + isGigaF, ascii, ascii + 3 + isGigaF);
-				// show the remaining 2 small frequency digits
-				UI_PrintStringSmall(String + 7, 85, 0, line + 4,0); //temp
-				String[7] = 0;
-				// show the main large frequency digits
-				UI_DisplayFrequency(String, 16, line+4, false);
-			}
-			else
-			{
-				if (gCurrentFunction == FUNCTION_TRANSMIT)
-				{	// transmitting
-				frequency = gEeprom.VfoInfo.pTX->Frequency;
-				} else {
-					if(gEeprom.ScreenChannel <= MR_CHANNEL_LAST) frequency = BOARD_fetchChannelFrequency(gEeprom.ScreenChannel);
+						// ВВОД ЧАСТОТЫ В VFO — МЕНЯЙ ЗДЕСЬ
+				if (gInputBoxIndex > 0 && gEeprom.ScreenChannel > MR_CHANNEL_LAST) {
+					const char *ascii = INPUTBOX_GetAscii();
+					bool isGigaF = frequency >= 100000000;
+					sprintf(String, "%.*s.%.3s", 3 + isGigaF, ascii, ascii + 3 + isGigaF);
+					UI_PrintStringSmall(String + 7, 85, 0, line + 3, 0); // ← X нулей: 85 | ← Y нулей: line + 4
+					String[7] = 0;
+					UI_DisplayFrequency(String, 16, line + 3, false);   // ← X больших: 16 | ← Y больших: line + 4
 				}
-				// Always show frequency МЕЛКИЕ НУЛИ
-				sprintf(String, "%3u.%05u", frequency / 100000, frequency % 100000);   //temp
-					//UI_PrintStringSmall(String + 7, 105, 0, line + 5, 0); //мелкие нули как м
-					UI_PrintString(String + 7, 110 - (strlen(String + 7) * 6 / 2), 0, line + 4, 8);
-				String[7] = 0;
+				else {
+					if (gCurrentFunction == FUNCTION_TRANSMIT) frequency = gEeprom.VfoInfo.pTX->Frequency;
+					else if (gEeprom.ScreenChannel <= MR_CHANNEL_LAST) frequency = BOARD_fetchChannelFrequency(gEeprom.ScreenChannel);
+								
+				// МЕЛКИЕ НУЛИ ЧАСТОТЫ
+				sprintf(String, "%3u.%05u", frequency / 100000, frequency % 100000);
+					// Маленькие нули — поднимаем на один шаг выше только в MR
+					uint8_t small_y = (IS_MR_CHANNEL(gEeprom.ScreenChannel)) ? line + 4 : line + 3;
+					uint8_t small_x_center = (IS_MR_CHANNEL(gEeprom.ScreenChannel)) ? 110 : 110;  // ← МX-центр нулей в MR/VFO
+					UI_PrintString(String + 7, 
+					               small_x_center - (strlen(String + 7) * 6 / 2), 
+					               0, small_y, 8);
+					String[7] = 0;
 
-				// show the main large frequency digits БОЛЬШАЯ ЧАСТОТА
-				UI_DisplayFrequency(String, 45 - (strlen(String) * 8 / 2), line+4, false);
+				// БОЛЬШАЯ ЧАСТОТА — поднимаем на один шаг выше только в MR
+				uint8_t big_y = (IS_MR_CHANNEL(gEeprom.ScreenChannel)) ? line + 4 : line + 3;
+					uint8_t big_x_center = (IS_MR_CHANNEL(gEeprom.ScreenChannel)) ? 47 : 45;      // ← X-центр больших цифр в MR/VFO
+					UI_DisplayFrequency(String, 
+					                     big_x_center - (strlen(String) * 8 / 2), 
+					                     big_y, false);
+
+
 
 				// ИМЯ КАНАЛА 
 				if (IS_MR_CHANNEL(gEeprom.ScreenChannel) && state == VFO_STATE_NORMAL)
@@ -237,20 +250,19 @@ void UI_DisplayMain(void)
 						while (p > DisplayString && *p == '0') *p-- = '\0';
 						if (*p == '.') *p = '\0';
 
-						// Выводим по центру экрана (равнение право)
-						/*UI_PrintString(DisplayString, 64 - (strlen(DisplayString) * 4), 0, line + 2, 8);*/ //равнение центр
+						// Выводим ИМЯ КАНАЛА
+						UI_PrintString(DisplayString, 85 - (strlen(DisplayString) * 4), 0, line + 2, 8); //равнение центр
 						//UI_PrintString(DisplayString, 38, 0, line+2, 8); //лево
-											// ИМЯ КАНАЛА — РОВНО ПО ПРАВОМУ КРАЮ С ОТСТУПОМ 8 ПИКСЕЛЕЙ
-						{
-							uint8_t text_width = strlen(DisplayString) * 8;
-							uint8_t x_pos = 126 - text_width;   // красиво, не прижимается к краю
+						/*{
+							uint8_t text_width = strlen(DisplayString) * 8;// ИМЯ КАНАЛА — РОВНО ПО ПРАВОМУ КРАЮ С ОТСТУПОМ 8 ПИКСЕЛЕЙ
+							uint8_t x_pos = 128 - text_width;   // красиво, не прижимается к краю
 							UI_PrintString(DisplayString, x_pos, 0, line + 2, 8);
-						}
+						}*/
 					}
 				}
 			}
 
-		// show the TX/RX level
+		// show the TX/RX level АНТЕННА СИМВОЛ
 		uint8_t Level = 0;
 		if (mode == 1)
 		{	// TX power level
@@ -282,9 +294,9 @@ void UI_DisplayMain(void)
 			break;
 		}		
 		///ЗНАК МОДУЛЯЦИИ FM
-		GUI_DisplaySmallest(s, 2, 35, false, true); 
+		//GUI_DisplaySmallest(s, 2, 35, false, true); 
 		//UI_PrintStringSmall(s, LCD_WIDTH + 25, 0, line +5,0); СТАРАЯ
-		//GUI_DisplaySmallest(s, 2 - (strlen(s) * 7 / 2)-1, 35, false, true); //+/-1 компенсация полпикселя центрование
+		GUI_DisplaySmallest(s, 10 - (strlen(s) * 7 / 2)-1, 35, false, true); //+/-1 компенсация полпикселя центрование
 
 
 		// show the Ptt_Toggle_Mode КНОПКА ПТТ
@@ -307,7 +319,7 @@ void UI_DisplayMain(void)
 			const unsigned int i = gEeprom.VfoInfo.TX_OFFSET_FREQUENCY_DIRECTION;
 			String[0] = (i < sizeof(dir_list)) ? dir_list[i] : '?';
 			String[1] = '\0';
-			UI_PrintStringSmall(String, LCD_WIDTH + 0, 0, line + 5,0);
+			UI_PrintStringSmall(String, LCD_WIDTH + 2, 0, line + 5,0);
 		}
 
 		// === ПОЛОСА + ШАГ — в нижней строке (точно как ты хотел) ===
@@ -365,39 +377,145 @@ void UI_DisplayMain(void)
 
 	}
 
-	// ПУНКТИРНЫЕ ГОРИЗОНТАЛЬНЫЕ ЛИНИИ: DOTTED LINE
-// Просто меняй числа в массиве и количество
-uint8_t line_heights[] = {24, 37};   // ←←←←← меняй высоты тут
-uint8_t line_count = 2;                      // ←←←←← количество линий
 
-for (uint8_t i = 0; i < line_count; i++)
-{
-    uint8_t y = line_heights[i];
+//****************************************ЛИНИИ******LINES******************************************//
 
-    for (uint8_t x = 0; x < 128; x += 2)     // шаг 2 = точка + пробел
-    {
-        if (y < 8)
-            gStatusLine[x] |= (1u << y);
-        else
-            gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
-    }
-}
-
-/*/ КРАСИВЫЕ КОРОТКИЕ ВЕРТИКАЛЬНЫЕ ПОЛОСЫ — от 10px сверху, длина 20px
+	/*/ ГОРИЗОНТАЛЬНЫЕ ЛИНИИ — РАЗНЫЕ В MR И VFO-РЕЖИМАХ
 	{
-		const uint8_t start_y = 30;    // начало полосы (сверху)
-		const uint8_t length  = 10;    // длина полосы
-		const uint8_t x_pos[] = {2, 38, 86};  // позиции по горизонтали (подстраивай под себя)
+		// ←←←←← ЛИНИИ В MR-РЕЖИМЕ ←←←←←
+		const uint8_t y_pos_mr[]  = {24, 39};           // твои позиции для каналов
 
-		for (uint8_t i = 0; i < ARRAY_SIZE(x_pos); i++) {
-			uint8_t x = x_pos[i];
-			for (uint8_t y = start_y; y < start_y + length; y++) {
+		// ←←←←← ЛИНИИ В VFO-РЕЖИМЕ ←←←←←
+		const uint8_t y_pos_vfo[] = {20, 44};           // другие позиции для частоты
+
+		const uint8_t* y_pos;
+		uint8_t        count;
+
+		if (IS_MR_CHANNEL(gEeprom.ScreenChannel)) {
+			y_pos = y_pos_mr;
+			count = ARRAY_SIZE(y_pos_mr);
+		} else {
+			y_pos = y_pos_vfo;
+			count = ARRAY_SIZE(y_pos_vfo);
+		}
+
+		// Рисуем горизонтальные линии
+		for (uint8_t i = 0; i < count; i++) {
+			uint8_t y = y_pos[i];
+			for (uint8_t x = 0; x < 128; x++) {
 				if (y < 8)
-					gStatusLine[x] |= (1u << y);                    // верхняя статусная строка
+					gStatusLine[x] |= (1u << y);
 				else
-					gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7)); // основная область
+					gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
 			}
 		}
 	}*/
+
+
+	// ПУНКТИРНЫЕ ГОРИЗОНТАЛЬНЫЕ ЛИНИИ — РАЗНЫЕ В MR И VFO
+	{
+		// ←←←←← ПУНКТИРНЫЕ ЛИНИИ В MR-РЕЖИМЕ ←←←←←
+		const uint8_t y_pos_mr[]  = {24, 37};           // твои текущие позиции
+
+		// ←←←←← ПУНКТИРНЫЕ ЛИНИИ В VFO-РЕЖМЕ ←←←←←
+		const uint8_t y_pos_vfo[] = {28, 30, 49, 51};           // другие позиции (пример)
+
+		const uint8_t* y_pos;
+		uint8_t        count;
+
+		if (IS_MR_CHANNEL(gEeprom.ScreenChannel)) {
+			y_pos = y_pos_mr;
+			count = ARRAY_SIZE(y_pos_mr);
+		} else {
+			y_pos = y_pos_vfo;
+			count = ARRAY_SIZE(y_pos_vfo);
+		}
+
+		// Рисуем пунктирные горизонтальные линии (шаг 2)
+		for (uint8_t i = 0; i < count; i++) {
+			uint8_t y = y_pos[i];
+			for (uint8_t x = 0; x < 128; x += 2) {
+				if (y < 8)
+					gStatusLine[x] |= (1u << y);
+				else
+					gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+			}
+		}
+	}
+
+
+	
+
+/*/ КОРОТКИЕ ПУНКТИРНЫЕ ВЕРТИКАЛЬНЫЕ ЛИНИИ — РАЗНЫЕ В MR И VFO
+	{
+		const uint8_t start_y = 10;     // от 10 пикселей сверху
+		const uint8_t length  = 20;     // длина линии
+		const uint8_t step_y  = 2;      // пунктир: точка + пробел
+
+		// ←←←←← ПОЗИЦИИ ДЛЯ MR-РЕЖИМА ←←←←←
+		const uint8_t x_pos_mr[]  = {20, 38};
+
+		// ←←←←← ПОЗИЦИИ ДЛЯ VFO-РЕЖИМА ←←←←←
+		const uint8_t x_pos_vfo[] = {28, 48};
+
+		// Выбираем нужный массив в зависимости от режима
+		const uint8_t* x_pos;
+		uint8_t count;
+
+		if (IS_MR_CHANNEL(gEeprom.ScreenChannel)) {
+			x_pos = x_pos_mr;
+			count = ARRAY_SIZE(x_pos_mr);
+		} else {
+			x_pos = x_pos_vfo;
+			count = ARRAY_SIZE(x_pos_vfo);
+		}
+
+		// Рисуем линии
+		for (uint8_t i = 0; i < count; i++) {
+			uint8_t x = x_pos[i];
+			for (uint8_t y = start_y; y < start_y + length; y += step_y) {
+				if (y < 8)
+					gStatusLine[x] |= (1u << y);
+				else
+					gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+			}
+		}
+	}*/
+
+		// КОРОТКИЕ СПЛОШНЫЕ ВЕРТИКАЛЬНЫЕ ЛИНИИ — РАЗНЫЕ В MR И VFO
+	{
+		const uint8_t start_y = 26;     // от 10 пикселей сверху
+		const uint8_t length  = 10;     // длина линии (20 пикселей)
+
+		// ←←←←← СПЛОШНЫЕ ЛИНИИ В MR-РЕЖИМЕ ←←←←←
+		const uint8_t x_pos_mr[]  = {35};     // твои позиции для каналов
+
+		// ←←←←← СПЛОШНЫЕ ЛИНИИ В VFO-РЕЖИМЕ ←←←←←
+		const uint8_t x_pos_vfo[] = { };          // другие позиции для частоты
+
+		const uint8_t* x_pos;
+		uint8_t        count;
+
+		if (IS_MR_CHANNEL(gEeprom.ScreenChannel)) {
+			x_pos = x_pos_mr;
+			count = ARRAY_SIZE(x_pos_mr);
+		} else {
+			x_pos = x_pos_vfo;
+			count = ARRAY_SIZE(x_pos_vfo);
+		}
+
+		// Рисуем сплошные линии (без шага — каждый пиксель закрашен)
+		for (uint8_t i = 0; i < count; i++) {
+			uint8_t x = x_pos[i];
+			for (uint8_t y = start_y; y < start_y + length; y++) {
+				if (y < 8)
+					gStatusLine[x] |= (1u << y);
+				else
+					gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+			}
+		}
+	}
+
+
 	ST7565_BlitFullScreen();
 }

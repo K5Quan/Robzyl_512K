@@ -650,6 +650,53 @@ void UI_DisplayMenu(void)
 		UI_PrintString(String, menu_item_x1, menu_item_x2, 5, 8);
 	}
 
+
+
+
+	// ───── ВЕРТИКАЛЬНАЯ ЛИНИЯ В МЕНЮ (меняй только числа ниже) ─────
+	{
+		const uint8_t x     = 50;   // ← позиция линии по горизонтали (0..127). 64 = ровно по центру
+		const uint8_t y_start = 1;  // ← с какой высоты начинать (0 = самый верх)
+		const uint8_t y_end   = 63; // ← где заканчивать (63 = самый низ)
+		
+
+		for (uint8_t y = y_start; y <= y_end; y++) {
+			uint8_t page = y >> 3;        // y / 8  → номер страницы (0..7)
+			uint8_t bit  = 1 << (y & 7);  // y % 8  → нужный бит в байте
+			gFrameBuffer[page][x] |= bit; // зажигаем пиксель
+		}
+	}
+
+// === ГОРИЗОНТАЛЬНАЯ ЛИНИЯ НА НУЖНОЙ ВЫСОТЕ (0..63) ===
+    uint8_t line_y = 8;   // ← МЕНЯЙ ТОЛЬКО ЭТО ЧИСЛО! (0 = самый верх, 63 = самый низ)
+
+    for (uint8_t x = 0; x < 128; x++)
+    {
+        if (line_y < 8)
+            gStatusLine[x] |= (1u << line_y);                                          // статусная строка
+        else
+            gFrameBuffer[(line_y - 8) >> 3][x] |= (1u << ((line_y - 8) & 7));          // основной экран
+    }
+
+
+		/*/ ПУНКТИРНЫЕ ГОРИЗОНТАЛЬНЫЕ ЛИНИИ: DOTTED LINE
+// Просто меняй числа в массиве и количество
+uint8_t line_heights[] = {8};   // ←←←←← меняй высоты тут
+uint8_t line_count = 2;                      // ←←←←← количество линий
+
+for (uint8_t i = 0; i < line_count; i++)
+{
+    uint8_t y = line_heights[i];
+
+    for (uint8_t x = 0; x < 128; x += 2)     // шаг 2 = точка + пробел
+    {
+        if (y < 8)
+            gStatusLine[x] |= (1u << y);
+        else
+            gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+    }
+}*/
+
 	ST7565_BlitFullScreen();
 }
 
