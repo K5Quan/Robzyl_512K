@@ -1367,9 +1367,9 @@ switch(SpectrumMonitor) {
   
   len = sprintf(&String[pos],"%dms %s %s ", DelayRssi, gModulationStr[settings.modulationType],bwNames[settings.listenBw]);
   pos += len;
-  int32_t afc = ((int64_t)(int16_t)BK4819_ReadRegister(0x6D) * 1000LL) / 291LL;
-  if (afc){
-      len = sprintf(&String[pos],"A%+d ", afc);
+  int16_t afcVal = BK4819_GetAFCValue();
+  if (afcVal) {
+      len = sprintf(&String[pos],"A%+d ", afcVal);
       pos += len;
   }
   GUI_DisplaySmallest(String, 0, 1, true,true);
