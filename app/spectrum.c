@@ -767,11 +767,19 @@ if (historyListActive == true){
       else 
           if (PttEmission ==2){
           SpectrumDelay = 0; //not compatible
-          SETTINGS_SetVfoFrequency(HFreqs[historyListIndex]);
-          COMMON_SwitchToVFOMode();
-          gTxVfo->Modulation = MODULATION_FM;
-          gTxVfo->STEP_SETTING = STEP_0_01kHz;
-          gTxVfo->OUTPUT_POWER = OUTPUT_POWER_HIGH;
+          uint16_t ExitCh = BOARD_gMR_fetchChannel(HFreqs[historyListIndex]);
+          if (ExitCh == 0xFFFF) { //Not a known channel
+              SETTINGS_SetVfoFrequency(HFreqs[historyListIndex]);
+              gTxVfo->STEP_SETTING = STEP_0_01kHz;
+              gTxVfo->Modulation = MODULATION_FM;
+              gTxVfo->OUTPUT_POWER = OUTPUT_POWER_HIGH;
+              COMMON_SwitchToVFOMode();
+          }
+          else {
+            gEeprom.ScreenChannel = ExitCh;
+            gEeprom.MrChannel = ExitCh;
+            COMMON_SwitchToChannelMode();
+          }
           gRequestSaveChannel = 1;
           }
 
