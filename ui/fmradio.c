@@ -27,25 +27,71 @@
 #include "external/printf/printf.h"
 #include "settings.h"
 #include "ui/helper.h"
+#include <stdint.h>     // для uint8_t
+#include "ui/ui.h"      // для gFrameBuffer и gStatusLine
 
 void UI_DisplayFM(void)
 {
-	char         String[16];
+	char String[16];
 
+	// Очистка экрана
 	memset(gFrameBuffer, 0, sizeof(gFrameBuffer));
 
-	memset(String, 0, sizeof(String));
+	// === Текст "FM" большим шрифтом ===
 	strcpy(String, "FM");
-	UI_PrintString(String, 0, 127, 0, 12);
+	UI_PrintString(String, 25, 10, 2, 10);
 
+	// === Частота большим шрифтом ===
 	memset(String, 0, sizeof(String));
-
-	UI_PrintString(String, 0, 127, 2, 10);
-
-	memset(String, 0, sizeof(String));
-
 	sprintf(String, "%3d.%d", gEeprom.FM_FrequencyPlaying / 10, gEeprom.FM_FrequencyPlaying % 10);
-	UI_DisplayFrequency(String, 32, 4, true);			
+	UI_DisplayFrequency(String, 55, 2, true);
+
+
+
+
+	// === ПУНКТИРНОСТЬ (меняй здесь) ===
+	uint8_t step = 2;  // 1 = сплошная, 2 = •◦, 3 = •◦◦
+
+	// === ДВЕ ГОРИЗОНТАЛЬНЫЕ ЛИНИИ ===
+	// Верхняя (Y = 16)
+	for (uint8_t x = 0; x < 128; x += step) {
+		uint8_t y = 16;
+		if (y < 8) gStatusLine[x] |= (1u << y);
+		else gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+	}
+
+	// Нижняя (Y = 48)
+	for (uint8_t x = 8; x < 125; x += step) {
+		uint8_t y = 44;
+		if (y < 8) gStatusLine[x] |= (1u << y);
+		else gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+	}
+
+	// Нижняя (Y = 58)
+	for (uint8_t x = 2; x < 126; x += step) {
+		uint8_t y = 58;
+		if (y < 8) gStatusLine[x] |= (1u << y);
+		else gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+	}
+
+	// === ДВЕ ВЕРТИКАЛЬНЫЕ ЛИНИИ ===
+	// Левая (X = 14, Y от 10 до 54)
+	for (uint8_t y = 9; y <= 53; y += step) {
+		uint8_t x = 14;
+		if (y < 8) gStatusLine[x] |= (1u << y);
+		else gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+	}
+
+	// Правая (X = 113, Y от 20 до 40)
+	for (uint8_t y = 20; y <= 50; y += step) {
+		uint8_t x = 120;
+		if (y < 8) gStatusLine[x] |= (1u << y);
+		else gFrameBuffer[(y - 8) >> 3][x] |= (1u << ((y - 8) & 7));
+	}
+	// === Надписи мелким дарк шрифтом ===
+	GUI_DisplaySmallestDark("BROADCAST", 6, 6, false, true);
+	GUI_DisplaySmallestDark("STATION", 70, 38, false, true);
+
 
 	ST7565_BlitFullScreen();
 }

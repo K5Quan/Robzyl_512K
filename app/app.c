@@ -336,14 +336,25 @@ void APP_StartListening(FUNCTION_Type_t Function)
 {
 
 	//VFO sensitivity test KOLYAN
-/*  	BK4819_WriteRegister(BK4819_REG_40, 13520);
+ 	BK4819_WriteRegister(BK4819_REG_40, 13520);
   	BK4819_WriteRegister(BK4819_REG_29, 43840);
   	BK4819_WriteRegister(BK4819_REG_19, 4161);
   	BK4819_WriteRegister(BK4819_REG_73, 18066);
   	BK4819_WriteRegister(BK4819_REG_13, 958);
   	BK4819_WriteRegister(BK4819_REG_3C, 20360);
   	BK4819_WriteRegister(BK4819_REG_43, 13896);
-  	BK4819_WriteRegister(BK4819_REG_2B, 49152); */
+  	BK4819_WriteRegister(BK4819_REG_2B, 49152);
+	BK4819_SetFilterBandwidth(gCurrentVfo->CHANNEL_BANDWIDTH, false);
+	//VFO sensitivity test KOLYAN
+  	uint32_t reg = regs_cache[BK4819_REG_47];
+  	reg &= ~(1 << 8);
+  	reg |= 1 << 8;
+  	BK4819_WriteRegister(BK4819_REG_47, reg);
+  	uint32_t Reg = regs_cache[BK4819_REG_30];
+  	Reg &= ~(1 << 9);
+  	Reg |= (1 << 9);
+  	BK4819_WriteRegister(BK4819_REG_30, Reg);
+ 	BK4819_InitAGC(gTxVfo->Modulation);
 
 	const unsigned int chan = 0;
 	if (gFmRadioMode)
@@ -845,6 +856,7 @@ void APP_TimeSlice500ms(void)
 	if (gBacklightCountdown > 0 && 
 		!gAskToSave && 
 		!gCssBackgroundScan &&
+		//!gBacklightAlwaysOn &&  // ← ЭТА СТРОКА ПОДСВЕТКА F8— не гасим, если включён режим "всегда"
 		// don't turn off backlight if user is in backlight menu option
 		!(gScreenToDisplay == DISPLAY_MENU && (UI_MENU_GetCurrentMenuId() == MENU_ABR || UI_MENU_GetCurrentMenuId() == MENU_ABR_MAX)) 
 		) 

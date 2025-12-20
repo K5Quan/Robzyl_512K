@@ -37,7 +37,12 @@
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 #include <stdlib.h>
-//#include "debugging.h"
+#include "driver/backlight.h"  // правильный путь
+
+// Флаг для постоянной подсветки (toggle F+8)
+bool gBacklightAlwaysOn = false;
+uint8_t gSavedBacklightLevel = 10;  // начальное значение (максимум)
+
 
 static void MAIN_Key_STAR(bool closecall)
 {
@@ -92,7 +97,6 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 			}
 
 			if(gTxVfo->pRX->Frequency < 100000000) { //Robby69 directly go to 1Ghz
-			//if(gTxVfo->Band == 6 && gTxVfo->pRX->Frequency < 100000000) {
 					gTxVfo->Band = 7;
 					gTxVfo->pRX->Frequency = 100000000;
 					return;
@@ -131,80 +135,129 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 			ACTION_SwitchDemodul();
 			break;
 
-		case KEY_8:
-			ACTION_Power();
+			//****************УПРАВЛЕНИЕ ПОДСВЕТКОЙ F8 */
+			case KEY_8:
+			if (gWasFKeyPressed) {
+				// F+8 — toggle "подсветка всегда включена"
+				gBacklightAlwaysOn = !gBacklightAlwaysOn;
+
+				if (gBacklightAlwaysOn) {
+					gBacklightCountdown = 0;
+					backlightOn = true;
+				} else {
+					backlightOn = true;
+
+					if (gEeprom.BACKLIGHT_TIME == 7) {
+						gBacklightCountdown = 0;
+					} else {
+						switch (gEeprom.BACKLIGHT_TIME)
+						{
+							case 1: gBacklightCountdown = 10;  break;
+							case 2: gBacklightCountdown = 20;  break;
+							case 3: gBacklightCountdown = 40;  break;
+							case 4: gBacklightCountdown = 120; break;
+							case 5: gBacklightCountdown = 240; break;
+							case 6: gBacklightCountdown = 480; break;
+							default: gBacklightCountdown = 0; break;
+						}
+					}
+				}
+
+				gUpdateDisplay = true;
+			} else {
+				ACTION_Power();  // длинное нажатие 8 — мощность
+			}
 			break;
+
+			
 		case KEY_9:
 			gTxVfo->CHANNEL_BANDWIDTH =
 				ACTION_NextBandwidth(gTxVfo->CHANNEL_BANDWIDTH, gTxVfo->Modulation != MODULATION_AM, 0);
 			break;
 
-
 		default:
-			   
 			gWasFKeyPressed = false;
 			break;
 	}
 }
 
-
 //ФУНКЦИИ КНОПОК 4
 static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 {
 	if (bKeyHeld)
-	{	// key held down
+	{
 		if (bKeyPressed)
 		{
 			if (gScreenToDisplay == DISPLAY_MAIN)
 			{
 				if (gInputBoxIndex > 0)
-				{	// delete any inputted chars
-					gInputBoxIndex        = 0;
+				{
+					gInputBoxIndex = 0;
 					gRequestDisplayScreen = DISPLAY_MAIN;
 				}
 				gWasFKeyPressed = false;
-				   
-				processFKeyFunction(Key, false);
+				processFKeyFunction(Key, false);  // длинное F+цифра
 			}
 		}
 		return;
 	}
 
 	if (bKeyPressed)
-	{	// key is pressed
-		return; // don't use the key till it's released
+	{
+		return;
 	}
 
-	//конец кнопок 4
+	// === F+8 — toggle "подсветка всегда включена" ===
+	if (gWasFKeyPressed && Key == KEY_8) {
+		gBacklightAlwaysOn = !gBacklightAlwaysOn;
 
+		if (gBacklightAlwaysOn) {
+			gBacklightCountdown = 0;
+			backlightOn = true;
+		} else {
+			backlightOn = true;
+
+			if (gEeprom.BACKLIGHT_TIME == 7) {
+				gBacklightCountdown = 0;
+			} else {
+				switch (gEeprom.BACKLIGHT_TIME)
+				{
+					case 1: gBacklightCountdown = 10;  break;
+					case 2: gBacklightCountdown = 20;  break;
+					case 3: gBacklightCountdown = 40;  break;
+					case 4: gBacklightCountdown = 120; break;
+					case 5: gBacklightCountdown = 240; break;
+					case 6: gBacklightCountdown = 480; break;
+					default: gBacklightCountdown = 0; break;
+				}
+			}
+		}
+
+		gUpdateDisplay = true;
+		gWasFKeyPressed = false;
+		return;
+	}
+
+	// === Обычный ввод цифр (короткое нажатие, включая 8) === 
 	if (!gWasFKeyPressed)
-	{	// F-key wasn't pressed
-		// Vérifier si on est en mode VFO (fréquence)
+	{
 		bool isFreqMode = IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE);
-		
-		// Pas de timeout pour l'entrée de fréquence, seulement pour les canaux
+
 		if (!isFreqMode)
 			gKeyInputCountdown = key_input_timeout_500ms;
-		
-		
-		// Chiffres normaux
+
 		INPUTBOX_Append(Key);
 		gRequestDisplayScreen = DISPLAY_MAIN;
 
-		// Gestion des canaux MR
 		if (!isFreqMode)
 		{
-			uint16_t Channel;
-			
-			// Si on a 1 ou 2 chiffres, attendre le timeout
 			if (gInputBoxIndex == 1 || gInputBoxIndex == 2)
 				return;
-				
-			// 3 chiffres = validation immédiate
+
 			if (gInputBoxIndex == 3)
 			{
-				Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
-				
+				uint16_t Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
+
 				if (!RADIO_CheckValidChannel(Channel, false, 0)) 
 				{
 					gInputBoxIndex = 0;
@@ -221,7 +274,7 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 			gInputBoxIndex = 0;
 
-			Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
+			uint16_t Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
 
 			if (!RADIO_CheckValidChannel(Channel, false,0)) return;
 
@@ -232,12 +285,12 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 			return;
 		}
-		if (IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE))
-		{	// user is entering a frequency
 
+		if (IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE))
+		{
 			uint32_t Frequency;
 			bool isGigaF = gTxVfo->pRX->Frequency >= 100000000;
-			if (gInputBoxIndex < 6 + isGigaF){return;}
+			if (gInputBoxIndex < 6 + isGigaF) return;
 
 			gInputBoxIndex = 0;
 			Frequency = StrToUL(INPUTBOX_GetAscii()) * 100;
@@ -247,18 +300,20 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			gRequestSaveChannel = 1;
 			return;
 		}
+
 		gRequestDisplayScreen = DISPLAY_MAIN;
 		return;
 	}
 
 	gWasFKeyPressed = false;
-	   
-
 	processFKeyFunction(Key, true);
 }
 
 static void MAIN_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 {
+	(void)bKeyPressed;
+	(void)bKeyHeld;
+
 	if (!bKeyHeld && bKeyPressed)
 	{	// exit key pressed
 
@@ -299,29 +354,63 @@ static void MAIN_Key_MENU()
 //УПРАВЛЕНИЕ SQL 
 static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 {
+	(void)bKeyPressed;
+	(void)bKeyHeld;
+	(void)Direction;
+
 	uint16_t Channel = gEeprom.ScreenChannel;
-	if (!bKeyPressed && !bKeyHeld) return;
-	if (gInputBoxIndex > 0)	return;
+	if (gInputBoxIndex > 0) return;
 
-	uint16_t Next;
-
-	if (IS_FREQ_CHANNEL(Channel))
-
+	if (IS_FREQ_CHANNEL(Channel))  // VFO-режим
 	{
+		static uint8_t repeat_count = 0;
+
+		if (bKeyHeld)
+		{
+			// Длинное нажатие — запускаем прокрутку после задержки
+			repeat_count++;
+			if (repeat_count < 6) return;  // задержка перед началом прокрутки (~0.4 сек)
+			if (repeat_count > 20) repeat_count = 8;  // ускорение после долгого удержания
+		}
+		else
+		{
+			// Кнопка отпущена — короткое нажатие
+			if (repeat_count == 0)
+			{
+				// короткое нажатие — только один шаг
+				repeat_count = 1;  // делаем один шаг
+			}
+			else
+			{
+				// отпустили после удержания — ничего не делаем (прокрутка уже шла)
+				repeat_count = 0;
+				return;
+			}
+		}
+
+		// делаем шаг
 		uint32_t frequency = APP_SetFrequencyByStep(gTxVfo, Direction);
 		if (RX_freq_check(frequency) == 0xFF) return;
+
 		gTxVfo->freq_config_RX.Frequency = frequency;
 		BK4819_SetFrequency(frequency);
 		gRequestSaveChannel = 1;
+		gUpdateDisplay = true;
+
 		return;
 	}
-	Next = RADIO_FindNextChannel(Channel + Direction, Direction, false, 0);
-	if (Next == 0xFFFF || Next == Channel) return;
-	gEeprom.MrChannel     = Next;
-	gEeprom.ScreenChannel = Next;
-	gRequestSaveVFO       = true;
-	gVfoConfigureMode     = VFO_CONFIGURE_RELOAD;
-	gPttWasReleased       = true;
+	else  // MR-режим
+	{
+		uint16_t Next = RADIO_FindNextChannel(Channel + Direction, Direction, false, 0);
+		if (Next == 0xFFFF || Next == Channel) return;
+
+		gEeprom.MrChannel     = Next;
+		gEeprom.ScreenChannel = Next;
+		gRequestSaveVFO       = true;
+		gVfoConfigureMode     = VFO_CONFIGURE_RELOAD;
+		gPttWasReleased       = true;
+		gUpdateDisplay = true;
+	}
 }
 //END SQL	
 
@@ -332,16 +421,22 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 		if (bKeyPressed && !bKeyHeld)
 		{
 			gWasFKeyPressed = true;
-			// Pas de timeout pour F, reste actif jusqu'à action
-			gKeyInputCountdown = 0; // ou une valeur très grande
+			gKeyInputCountdown = 0;
 		}
 		return;
 	}
+
+	// Включаем подсветку при любом коротком нажатии кнопки (кроме F)
+	if (bKeyPressed && !bKeyHeld && Key != KEY_F)
+	{
+		BACKLIGHT_TurnOn();
+	}
+
 	if (gFmRadioMode && Key != KEY_PTT && Key != KEY_EXIT)
-		{
-			if (!bKeyHeld && bKeyPressed)
+	{
+		if (!bKeyHeld && bKeyPressed)
 			return;
-		}
+	}
 	switch (Key)
 	{
 		case KEY_0:
@@ -357,57 +452,69 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			MAIN_Key_DIGITS(Key, bKeyPressed, bKeyHeld);
 			break;
 		case KEY_MENU:
-			MAIN_Key_MENU();
-			break;
-
-
-			//КНОПКИ ВВЕРХ ВНИЗ SQL   
-case KEY_UP:
-case KEY_DOWN:
-    if (gWasFKeyPressed && bKeyPressed && !bKeyHeld)
+    if (bKeyHeld)
     {
-        // F + UP/DOWN — мгновенная смена SQL 0-9
-        if (Key == KEY_UP)
-        {
-            if (gEeprom.SQUELCH_LEVEL < 9)
-                gEeprom.SQUELCH_LEVEL++;
-        }
-        else
-        {
-            if (Key == KEY_DOWN && gEeprom.SQUELCH_LEVEL > 0)
-                gEeprom.SQUELCH_LEVEL--;
-        }
-
-        gRequestSaveSettings = true;
-        gUpdateDisplay = true;
-
-        RADIO_ConfigureSquelchAndOutputPower(gTxVfo);
-        RADIO_ApplySquelch();
+        // Длинное MENU — твоя функция, например сброс или всегда в главное меню
+        gRequestDisplayScreen = DISPLAY_MAIN;
+        gInputBoxIndex = 0;
     }
     else
     {
-        // Обычное переключение каналов/частот — ВОТ ТУТ ВЫЗЫВАЕМ ТВОЮ ФУНКЦИЮ!
-        MAIN_Key_UP_DOWN(bKeyPressed, bKeyHeld, (Key == KEY_UP) ? 1 : -1);
+        MAIN_Key_MENU();  // стандартное короткое
     }
-    gWasFKeyPressed = false;
     break;
-			//END UP/DOWN
+
+		case KEY_UP:
+		case KEY_DOWN:
+			if (gWasFKeyPressed && bKeyPressed && !bKeyHeld)
+			{
+				if (Key == KEY_UP)
+				{
+					if (gEeprom.SQUELCH_LEVEL < 9)
+						gEeprom.SQUELCH_LEVEL++;
+				}
+				else
+				{
+					if (Key == KEY_DOWN && gEeprom.SQUELCH_LEVEL > 0)
+						gEeprom.SQUELCH_LEVEL--;
+				}
+
+				gRequestSaveSettings = true;
+				gUpdateDisplay = true;
+
+				RADIO_ConfigureSquelchAndOutputPower(gTxVfo);
+				RADIO_ApplySquelch();
+			}
+			else
+			{
+				MAIN_Key_UP_DOWN(bKeyPressed, bKeyHeld, (Key == KEY_UP) ? 1 : -1);
+			}
+			gWasFKeyPressed = false;
+			break;
 
 		case KEY_EXIT:
 			MAIN_Key_EXIT(bKeyPressed, bKeyHeld);
 			break;
+
 		case KEY_STAR:
 			if (gWasFKeyPressed) MAIN_Key_STAR(1);
 			else MAIN_Key_STAR(0);
 			break;
+
 		case KEY_F:
 			GENERIC_Key_F(bKeyPressed, bKeyHeld);
 			break;
+
 		case KEY_PTT:
 			GENERIC_Key_PTT(bKeyPressed);
 			break;
+
+		case KEY_SIDE1:
+		case KEY_SIDE2:
+		case KEY_INVALID:
+			break;
+
 		default:
-			
 			break;
 	}
 }

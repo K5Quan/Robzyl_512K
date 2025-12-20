@@ -259,6 +259,10 @@ extern int16_t               gCurrentRSSI;   // now one per VFO
 extern uint8_t               gIsLocked;
 extern volatile uint8_t      boot_counter_10ms;
 
+extern bool gBacklightAlwaysOn;
+extern bool backlightOn;  // ← добавь эту строку//************ПОДСВЕТКА F8*********** */
+extern uint8_t gSavedBacklightLevel;  // сохранённая яркость перед F+8
+
 int32_t NUMBER_AddWithWraparound(int32_t Base, int32_t Add, int32_t LowerLimit, int32_t UpperLimit);
 unsigned long StrToUL(const char * str);
 

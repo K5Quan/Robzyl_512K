@@ -36,96 +36,156 @@
 
 void UI_DisplayStatus()
 {
-	uint8_t     *line = gStatusLine;
-	unsigned int x    = 0;
-	unsigned int x1   = 0;
 	memset(gStatusLine, 0, sizeof(gStatusLine));
 
-	// **************
+	// === ОТДЕЛЬНЫЕ ПОЗИЦИИ ДЛЯ КАЖДОГО ИНДИКАТОРА ===
+	const uint8_t POS_TX   = 2;    // начало "TX" при передаче
+	const uint8_t POS_RX   = 2;    // начало "RX" при приёме
+	const uint8_t POS_PS   = 2;    // начало "PS" при Power Save
+	const uint8_t POS_LOCK = 72;   // Замок
+	const uint8_t POS_F    = 80;   // "F"
+	const uint8_t POS_B    = 88;   // "B"
 
-	// POWER-SAVE indicator
+	// === Индикатор передачи "TX" (двойной) ===
 	if (gCurrentFunction == FUNCTION_TRANSMIT)
 	{
-		memmove(line + x, BITMAP_TX, sizeof(BITMAP_TX));
-		x1 = x + sizeof(BITMAP_TX);
+		// "T"
+		gStatusLine[POS_TX + 0] |= 0x7F;
+		gStatusLine[POS_TX + 1] |= 0x7D;
+		gStatusLine[POS_TX + 2] |= 0x41;
+		gStatusLine[POS_TX + 3] |= 0x41;
+		gStatusLine[POS_TX + 4] |= 0x7D;
+		gStatusLine[POS_TX + 5] |= 0x7F;
+
+		// "X" вплотную после "T" (без пробела)
+		gStatusLine[POS_TX + 6] |= 0x5D;
+		gStatusLine[POS_TX + 7] |= 0x49;
+		gStatusLine[POS_TX + 8] |= 0x63;
+		gStatusLine[POS_TX + 9] |= 0x49;
+		gStatusLine[POS_TX + 10] |= 0x5D;
+		gStatusLine[POS_TX + 11] |= 0x7F;
 	}
-	else
+
+	// === Индикатор приёма "RX" (двойной) ===
 	if (gCurrentFunction == FUNCTION_RECEIVE ||
 	    gCurrentFunction == FUNCTION_MONITOR ||
 	    gCurrentFunction == FUNCTION_INCOMING)
 	{
-		memmove(line + x, BITMAP_RX, sizeof(BITMAP_RX));
-		x1 = x + sizeof(BITMAP_RX);
+		// "R"
+		gStatusLine[POS_RX + 0] |= 0x7F;
+		gStatusLine[POS_RX + 1] |= 0x41;
+		gStatusLine[POS_RX + 2] |= 0x75;
+		gStatusLine[POS_RX + 3] |= 0x75;
+		gStatusLine[POS_RX + 4] |= 0x49;
+		gStatusLine[POS_RX + 5] |= 0x7F;
+
+		// "X" вплотную после "R"
+		gStatusLine[POS_RX + 6] |= 0x5D;
+		gStatusLine[POS_RX + 7] |= 0x49;
+		gStatusLine[POS_RX + 8] |= 0x63;
+		gStatusLine[POS_RX + 9] |= 0x49;
+		gStatusLine[POS_RX + 10] |= 0x5D;
+		gStatusLine[POS_RX + 11] |= 0x7F;
 	}
-	else
+
+	// === Индикатор Power Save "PS" (двойной, расстояние уменьшено на 1 пиксель) ===
 	if (gCurrentFunction == FUNCTION_POWER_SAVE)
 	{
-		memmove(line + x, BITMAP_POWERSAVE, sizeof(BITMAP_POWERSAVE));
-		x1 = x + sizeof(BITMAP_POWERSAVE);
-	}
-	x += sizeof(BITMAP_POWERSAVE);
-	x += 7;  // font character width
-	x++;
-	x = MAX(x, 61u);
-	x1 = x;
+		// "P"
+		gStatusLine[POS_PS + 0] |= 0x7F;
+		gStatusLine[POS_PS + 1] |= 0x41;
+		gStatusLine[POS_PS + 2] |= 0x75;
+		gStatusLine[POS_PS + 3] |= 0x75;
+		gStatusLine[POS_PS + 4] |= 0x71;
+		gStatusLine[POS_PS + 5] |= 0x7F;
 
-	// KEY-LOCK indicator
+		// "S" вплотную после "P" (отступ 0 колонок)
+		gStatusLine[POS_PS + 6]  |= 0x7F;
+		gStatusLine[POS_PS + 7]  |= 0x51;
+		gStatusLine[POS_PS + 8]  |= 0x55;
+		gStatusLine[POS_PS + 9]  |= 0x55;
+		gStatusLine[POS_PS + 10] |= 0x45;
+		gStatusLine[POS_PS + 11] |= 0x7F;
+	}
+
+	// === Индикатор блокировки клавиатуры (замок) ===
 	if (gEeprom.KEY_LOCK)
 	{
-		memmove(line + x, BITMAP_KeyLock, sizeof(BITMAP_KeyLock));
-		x += sizeof(BITMAP_KeyLock);
-		x1 = x;
-	}
-	else
-	if (gWasFKeyPressed)
-	{
-		memmove(line + x, BITMAP_F_Key, sizeof(BITMAP_F_Key));
-		x += sizeof(BITMAP_F_Key);
-		x1 = x;
+		gStatusLine[POS_LOCK + 0] |= 0x7F;
+		gStatusLine[POS_LOCK + 1] |= 0x41;
+		gStatusLine[POS_LOCK + 2] |= 0x45;
+		gStatusLine[POS_LOCK + 3] |= 0x45;
+		gStatusLine[POS_LOCK + 4] |= 0x41;
+		gStatusLine[POS_LOCK + 5] |= 0x7F;
 	}
 
-	{	// battery voltage or percentage
-		char         s[8];
+	// === Индикатор нажатой F-клавиши ===
+	if (gWasFKeyPressed)
+	{
+		gStatusLine[POS_F + 0] |= 0x7F;
+		gStatusLine[POS_F + 1] |= 0x41;
+		gStatusLine[POS_F + 2] |= 0x41;
+		gStatusLine[POS_F + 3] |= 0x75;
+		gStatusLine[POS_F + 4] |= 0x75;
+		gStatusLine[POS_F + 5] |= 0x7F;
+	}
+
+	// === Индикатор постоянной подсветки "B" ===
+	if (gBacklightAlwaysOn)
+	{
+		gStatusLine[POS_B + 0] |= 0x7F;
+		gStatusLine[POS_B + 1] |= 0x73;
+		gStatusLine[POS_B + 2] |= 0x4D;
+		gStatusLine[POS_B + 3] |= 0x4D;
+		gStatusLine[POS_B + 4] |= 0x73;
+		gStatusLine[POS_B + 5] |= 0x7F;
+	}
+
+	// === Battery voltage / percentage ===
+	{
+		char s[8];
 		unsigned int space_needed;
-		
-		//unsigned int x2 = LCD_WIDTH - sizeof(BITMAP_BatteryLevel1) - 3;
 		unsigned int x2 = LCD_WIDTH - 3;
+
 		switch (gSetting_battery_text)
 		{
-			default:
-			case 0:
-				break;
-	
-			case 1:		// voltage
+			case 1: // voltage
 			{
-				const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999; // limit to 9.99V
+				const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999;
 				sprintf(s, "%u.%02uV", voltage / 100, voltage % 100);
-				space_needed = (7 * strlen(s));
-				if (x2 >= (x1 + space_needed))
-				{
-					UI_PrintStringSmallBuffer(s, line + x2 - space_needed);
-				}
+				space_needed = 7 * strlen(s);
+				if (x2 >= space_needed)
+					UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
 				break;
 			}
-			
-			case 2:		// percentage
+			case 2: // percentage
 			{
 				sprintf(s, "%u%%", BATTERY_VoltsToPercent(gBatteryVoltageAverage));
-				space_needed = (7 * strlen(s));
-				if (x2 >= (x1 + space_needed))
-					UI_PrintStringSmallBuffer(s, line + x2 - space_needed);
+				space_needed = 7 * strlen(s);
+				if (x2 >= space_needed)
+					UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
 				break;
 			}
 		}
 	}
-		
-	// move to right side of the screen
-	//x = LCD_WIDTH - sizeof(BITMAP_BatteryLevel1);
 
-	// BATTERY LEVEL indicator
-	//UI_DrawBattery(line + x, gBatteryDisplayLevel, gLowBatteryBlink);
-	
-	// **************
+	/*/ === Вертикальные линии ===
+	uint8_t line_x[] = {0, 127};
+	uint8_t num_lines = sizeof(line_x) / sizeof(line_x[0]);
+	uint8_t dash_step = 2;
+
+	for (uint8_t i = 0; i < num_lines; i++) {
+		uint8_t px = line_x[i];
+		if (dash_step == 1) {
+			gStatusLine[px] = 0xFF;
+		} else {
+			uint8_t pattern = 0;
+			for (uint8_t bit = 0; bit < 8; bit += dash_step) {
+				pattern |= (1 << bit);
+			}
+			gStatusLine[px] |= pattern;
+		}
+	}*/
 
 	ST7565_BlitStatusLine();
 }

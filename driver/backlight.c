@@ -26,7 +26,7 @@
 
 // this is decremented once every 500ms
 uint16_t gBacklightCountdown = 0;
-bool backlightOn;
+bool backlightOn; //***************F8 */
 
 void BACKLIGHT_InitHardware()
 {
@@ -59,46 +59,46 @@ void BACKLIGHT_InitHardware()
 
 void BACKLIGHT_TurnOn(void)
 {
-	if (gEeprom.BACKLIGHT_TIME != 0) {
-		backlightOn = true;
-		BACKLIGHT_SetBrightness(gEeprom.BACKLIGHT_MAX);
+	backlightOn = true;
+
+	// Если включён режим "всегда включена" (F+8) — не запускаем таймер и ставим максимум
+	if (gBacklightAlwaysOn)
+	{
+		gBacklightCountdown = 0;
+		BACKLIGHT_SetBrightness(gEeprom.BACKLIGHT_MAX);  // или 10, если хочешь фиксированную яркость
+		return;
 	}
-	else {
+
+	// Обычное поведение из меню
+	if (gEeprom.BACKLIGHT_TIME == 0)
+	{
 		BACKLIGHT_TurnOff();
 		return;
 	}
-		
+
+	BACKLIGHT_SetBrightness(gEeprom.BACKLIGHT_MAX);
+
 	switch (gEeprom.BACKLIGHT_TIME)
 	{
 		default:
-		case 1:	// 5 sec
-			gBacklightCountdown = 5;
-			break;
-		case 2:	// 10 sec
-			gBacklightCountdown = 10;
-			break;
-		case 3:	// 20 sec
-			gBacklightCountdown = 20;
-			break;
-		case 4:	// 1 min
-			gBacklightCountdown = 60;
-			break;
-		case 5:	// 2 min
-			gBacklightCountdown = 60 * 2;
-			break;
-		case 6:	// 4 min
-			gBacklightCountdown = 60 * 4;
-			break;
-		case 7:	// always on
-			gBacklightCountdown = 0;
-			break;
+		case 1: gBacklightCountdown = 5;   break;  // 5 сек
+		case 2: gBacklightCountdown = 10;  break;  // 10 сек
+		case 3: gBacklightCountdown = 20;  break;  // 20 сек
+		case 4: gBacklightCountdown = 60;  break;  // 1 мин
+		case 5: gBacklightCountdown = 120; break;  // 2 мин
+		case 6: gBacklightCountdown = 240; break;  // 4 мин
+		case 7: gBacklightCountdown = 0;   break;  // always on из меню
 	}
 
-	gBacklightCountdown *= 2;
+	gBacklightCountdown *= 2;  // потому что таймер тикает каждые 500 мс
 }
 
-void BACKLIGHT_TurnOff()
+void BACKLIGHT_TurnOff(void)
 {
+	// Не гасим подсветку, если включён режим "всегда включена" (F+8)
+	if (gBacklightAlwaysOn)
+		return;
+
 #ifdef ENABLE_BLMIN_TMP_OFF
 	register uint8_t tmp;
 
