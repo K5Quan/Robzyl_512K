@@ -336,7 +336,7 @@ static void HandleFunction(void)
 void APP_StartListening(FUNCTION_Type_t Function)
 {
 
-	//VFO sensitivity test KOLYAN
+/* 	//VFO sensitivity test KOLYAN
  	BK4819_WriteRegister(BK4819_REG_40, 13520);
   	BK4819_WriteRegister(BK4819_REG_29, 43840);
   	BK4819_WriteRegister(BK4819_REG_19, 4161);
@@ -354,7 +354,7 @@ void APP_StartListening(FUNCTION_Type_t Function)
   	uint32_t Reg = regs_cache[BK4819_REG_30];
   	Reg &= ~(1 << 9);
   	Reg |= (1 << 9);
-  	BK4819_WriteRegister(BK4819_REG_30, Reg);
+  	BK4819_WriteRegister(BK4819_REG_30, Reg); */
  	BK4819_InitAGC(gEeprom.RX_AGC, gTxVfo->Modulation);
 
 	const unsigned int chan = 0;
