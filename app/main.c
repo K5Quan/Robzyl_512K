@@ -41,18 +41,12 @@
 
 bool gBacklightAlwaysOn = false;
 
-static void MAIN_Key_STAR(void)
+static void MAIN_Key_STAR(bool closecall)
 {
-	if (gKeyBeingHeld)
-	{
-		APP_RunSpectrum(4);  // basic spectrum (бывший F+5)
-	} else if (gWasFKeyPressed) {
-		APP_RunSpectrum(2);  // band scan (бывший F+6)
-	} else {
-		APP_RunSpectrum(1);  // channel scan (бывший F+4)
-	}
-	gWasFKeyPressed = false;
-	gUpdateDisplay = true;
+	if (gCurrentFunction == FUNCTION_TRANSMIT) return;
+	gWasFKeyPressed          = false;
+	SCANNER_Start(closecall);
+	gRequestDisplayScreen = DISPLAY_SCANNER;
 }
 
 static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
@@ -483,9 +477,9 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			break;
 
 		case KEY_STAR:
-			MAIN_Key_STAR();
+			if (gWasFKeyPressed) MAIN_Key_STAR(1);
+			else MAIN_Key_STAR(0);
 			break;
-
 		case KEY_F:
 			GENERIC_Key_F(bKeyPressed, bKeyHeld);
 			break;

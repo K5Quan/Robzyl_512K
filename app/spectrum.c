@@ -2409,8 +2409,8 @@ static void RenderSpectrum()
 
         // === ФИКСИРОВАННЫЕ ГОРИЗОНТАЛЬНЫЕ ПУНКТИРНЫЕ ЛИНИИ ===
         // 5 фиксированных уровней: -120, -90, -60, -30, 0 dBm
-        const int fixedLevels[] = {-80, -60, -40};
-        const int numLevels = 3;
+        const int fixedLevels[] = {-120,-100,-80, -60, -40,-20};
+        const int numLevels = 6;
 
         int i;
         int y;
@@ -3083,9 +3083,9 @@ void ClearSettings()
   MaxListenTime = 0;
   IndexMaxLT = 0;
   IndexPS = 0;
-  Backlight_On_Rx = 0;
-  Noislvl_OFF = 60; 
-  Noislvl_ON = 50;  
+  Backlight_On_Rx = 1;
+  Noislvl_OFF = 69; 
+  Noislvl_ON = 59;  
   UOO_trigger = 15;
   osdPopupSetting = 500;
   for (int i = 0; i < 32; i++) { 
