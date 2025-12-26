@@ -323,7 +323,33 @@ void BK4819_InitAGC(const uint8_t agcType, ModulationMode_t modulation)
 	//1 << 14 - way better, seems to open squelch and match squelch as opposed to 0
 	// what is this for? turned off, seems like rssi is increased?
 	// BK4819_WriteRegister(BK4819_REG_7B, 0x8420); 
+  	
+	//from spectrum
+/* 	uint32_t reg = regs_cache[BK4819_REG_47]; //KARINA mod
+  	reg &= ~(1 << 8);
+  	reg |= 1 << 8;
+  	BK4819_WriteRegister(BK4819_REG_47, reg);
 
+	reg &= ~(1 << 9);
+  	reg |= (1 << 9);
+  	BK4819_WriteRegister(BK4819_REG_30, reg);
+
+	BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_02_CxCSS_TAIL);
+    
+	BK4819_WriteRegister(BK4819_REG_51,
+		        BK4819_REG_51_ENABLE_CxCSS         |
+		        BK4819_REG_51_AUTO_CDCSS_BW_ENABLE |
+		        BK4819_REG_51_AUTO_CTCSS_BW_ENABLE |
+		        (51u << BK4819_REG_51_SHIFT_CxCSS_TX_GAIN1));
+
+  	BK4819_WriteRegister(BK4819_REG_40, 13520);
+  	BK4819_WriteRegister(BK4819_REG_29, 43840);
+  	BK4819_WriteRegister(BK4819_REG_19, 4161);
+  	BK4819_WriteRegister(BK4819_REG_73, 18066);
+  	BK4819_WriteRegister(BK4819_REG_13, 958);
+  	BK4819_WriteRegister(BK4819_REG_3C, 20360);
+  	BK4819_WriteRegister(BK4819_REG_43, 13896);
+  	BK4819_WriteRegister(BK4819_REG_2B, 49152); */
 }
 
 

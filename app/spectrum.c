@@ -53,7 +53,9 @@ static volatile uint8_t gRequestedSpectrumState = 0;
 
 
 #define HISTORY_SIZE 30
-
+static uint8_t historyListIndex = 0;
+static uint8_t indexFs = 0;
+static int historyScrollOffset = 0;
 static uint32_t    HFreqs[HISTORY_SIZE];
 static uint8_t     HCount[HISTORY_SIZE];
 static bool  HBlacklisted[HISTORY_SIZE];
@@ -113,9 +115,7 @@ static uint16_t WaitSpectrum = 0;
 static uint32_t Last_Tuned_Freq = 44610000;
 #define SQUELCH_OFF_DELAY 10;
 static bool StorePtt_Toggle_Mode = 0;
-static uint8_t historyListIndex = 0;
 static uint8_t ArrowLine = 1;
-static int historyScrollOffset = 0;
 static void LoadValidMemoryChannels(void);
 static void ToggleRX(bool on);
 static void NextScanStep();
@@ -194,7 +194,6 @@ SpectrumSettings settings = {stepsCount: STEPS_128,
 
 static uint32_t currentFreq, tempFreq;
 static uint8_t rssiHistory[128];
-static uint8_t indexFs = 0;
 static int ShowLines = 3;
 static uint8_t freqInputIndex = 0;
 static uint8_t freqInputDotIndex = 0;
@@ -2409,8 +2408,8 @@ static void RenderSpectrum()
 
         // === ФИКСИРОВАННЫЕ ГОРИЗОНТАЛЬНЫЕ ПУНКТИРНЫЕ ЛИНИИ ===
         // 5 фиксированных уровней: -120, -90, -60, -30, 0 dBm
-        const int fixedLevels[] = {-120,-100,-80, -60, -40,-20};
-        const int numLevels = 6;
+        const int fixedLevels[] = {-120,-80,-40,0};
+        const int numLevels = 4;
 
         int i;
         int y;
@@ -2422,14 +2421,10 @@ static void RenderSpectrum()
             if (y < 8 || y > DrawingEndY) continue;
 
             // ЧЁРНАЯ пунктирная линия ОТ КРАЯ ДО КРАЯ: 1:2
-            for (x = 0; x < 128; x += 3) {
+            for (x = 0; x < 7; x++) {
                 PutPixel(x, y, true);  // Чёрная линия (белый пиксель на экране)
             }
 
-            // БЕЛАЯ пунктирная линия — смещена вправо на 1 пиксель
-            for (x = 1; x < 128; x += 3) {  // x + 1
-                PutPixel(x, y, false);  // Белая линия (стираем пиксель)
-            }
         }
         // === КОНЕЦ СЕТКИ ===
     }
