@@ -134,7 +134,7 @@ static void CheckForIncoming(void)
 	if (gCurrentFunction != FUNCTION_INCOMING)
 	{
 		FUNCTION_Select(FUNCTION_INCOMING);
-		BK4819_InitAGC(gEeprom.RX_AGC, gTxVfo->Modulation); //Test Kolyan
+		//BK4819_InitAGC(gEeprom.RX_AGC, gTxVfo->Modulation); //Test Kolyan
 		//gUpdateDisplay = true;
 
 		UpdateRSSI();
@@ -345,17 +345,8 @@ void APP_StartListening(FUNCTION_Type_t Function)
   	BK4819_WriteRegister(BK4819_REG_3C, 20360);
   	BK4819_WriteRegister(BK4819_REG_43, 13896);
   	BK4819_WriteRegister(BK4819_REG_2B, 49152);
-	BK4819_SetFilterBandwidth(gCurrentVfo->CHANNEL_BANDWIDTH, false);
-	//VFO sensitivity test KOLYAN
-  	uint32_t reg = regs_cache[BK4819_REG_47];
-  	reg &= ~(1 << 8);
-  	reg |= 1 << 8;
-  	BK4819_WriteRegister(BK4819_REG_47, reg);
-  	uint32_t Reg = regs_cache[BK4819_REG_30];
-  	Reg &= ~(1 << 9);
-  	Reg |= (1 << 9);
-  	BK4819_WriteRegister(BK4819_REG_30, Reg); */
- 	BK4819_InitAGC(gEeprom.RX_AGC, gTxVfo->Modulation);
+	BK4819_SetFilterBandwidth(gCurrentVfo->CHANNEL_BANDWIDTH, false);*/
+	BK4819_InitAGC(gEeprom.RX_AGC, gTxVfo->Modulation);
 
 	const unsigned int chan = 0;
 	if (gFmRadioMode)
@@ -366,6 +357,19 @@ void APP_StartListening(FUNCTION_Type_t Function)
 	gVFO_RSSI_bar_level[(chan + 1) & 1u] = 0;
 
 	AUDIO_AudioPathOn();
+	//VFO sensitivity test KOLYAN ToggleAFDAC
+  	uint32_t Reg = regs_cache[BK4819_REG_30];
+  	Reg &= ~(1 << 9);
+  	Reg |= (1 << 9);
+  	BK4819_WriteRegister(BK4819_REG_30, Reg);
+	
+	//VFO sensitivity test KOLYAN ToggleAFBit
+  	uint32_t reg = regs_cache[BK4819_REG_47];
+  	reg &= ~(1 << 8);
+  	reg |= 1 << 8;
+  	BK4819_WriteRegister(BK4819_REG_47, reg);
+
+ 	
 	gEnableSpeaker = true;
 
 	if (gSetting_backlight_on_tx_rx >= BACKLIGHT_ON_TR_RX)

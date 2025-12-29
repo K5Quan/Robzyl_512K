@@ -52,7 +52,7 @@ static volatile bool gSpectrumChangeRequested = false;
 static volatile uint8_t gRequestedSpectrumState = 0;
 
 
-#define HISTORY_SIZE 30
+#define HISTORY_SIZE 100
 static uint8_t historyListIndex = 0;
 static uint8_t indexFs = 0;
 static int historyScrollOffset = 0;
@@ -2086,16 +2086,22 @@ static void OnKeyDown(uint8_t key) {
       
     case KEY_UP: //History
       if (historyListActive) {
-          uint8_t count = CountValidHistoryItems();
-          SpectrumMonitor = 1; //Auto FL when moving in history
-          if (!count) return;
-              if (historyListIndex == 0)
-                  historyListIndex = count - 1;  // reboucle à la fin
-              else
-                  historyListIndex--;
-      
-              if (historyListIndex < historyScrollOffset) historyScrollOffset = historyListIndex;
-              SetF(HFreqs[historyListIndex]);
+        uint8_t count = CountValidHistoryItems();
+        if (!count) return;
+        if (historyListIndex == 0) {
+            historyListIndex = count - 1;
+            if (count > MAX_VISIBLE_LINES)
+                historyScrollOffset = count - MAX_VISIBLE_LINES;
+            else
+                historyScrollOffset = 0;
+        } else {
+            historyListIndex--;
+        }
+
+        if (historyListIndex < historyScrollOffset) {
+            historyScrollOffset = historyListIndex;
+        }
+        SetF(HFreqs[historyListIndex]);
       } else {
         if (appMode==SCAN_BAND_MODE) {
             ToggleScanList(bl, 1);
@@ -2127,14 +2133,17 @@ static void OnKeyDown(uint8_t key) {
     }
     break;
   case KEY_DOWN: //History
-        if (historyListActive) {
-            uint8_t count = CountValidHistoryItems();
-        SpectrumMonitor = 1; //Auto FL when moving in history
+      if (historyListActive) {
+        uint8_t count = CountValidHistoryItems();
         if (!count) return;
         historyListIndex++;
-        if (historyListIndex >= count)
-            historyListIndex = 0;  // reboucle au début
-        if (historyListIndex < historyScrollOffset) historyScrollOffset = historyListIndex;
+        if (historyListIndex >= count) {
+            historyListIndex = 0;
+            historyScrollOffset = 0;
+        }
+        if (historyListIndex >= historyScrollOffset + MAX_VISIBLE_LINES) {
+            historyScrollOffset = historyListIndex - MAX_VISIBLE_LINES + 1;
+        }
         SetF(HFreqs[historyListIndex]);
     } else {
         if (appMode==SCAN_BAND_MODE) {
@@ -2365,7 +2374,7 @@ static void OnKeyDownStill(KEY_Code_t key) {
         break;
         }
         SetState(SPECTRUM);
-        SpectrumDelay = 0; //Prevent coming back to still directly
+        WaitSpectrum = 0; //Prevent coming back to still directly
         
     break;
   default:
@@ -3273,24 +3282,16 @@ static void GetHistoryItemText(uint8_t index, char* buffer) {
     char Name[12] = ""; // 10 chars max + 1 pour \0 + 1 pour sécurité
     uint8_t dcount;
     uint32_t f = HFreqs[index];
-    
     buffer[0] = '\0'; 
-
-    if (f < 1400000 || f > 130000000) return;
-
-    // --- 1. Préparation des données ---
     snprintf(freqStr, sizeof(freqStr), "%u.%05u", f / 100000, f % 100000);
     RemoveTrailZeros(freqStr);
-    
     uint16_t Hchannel = BOARD_gMR_fetchChannel(f);
-    
     if (gCounthistory) {
         dcount = HCount[index];
     } else {
         dcount = HCount[index] / 2;
     }
     
-    // Lecture du nom du canal (Argument 1: Index, Argument 2: Buffer)
     if (Hchannel != 0xFFFF) {
         ReadChannelName(Hchannel, Name);
         Name[10] = '\0'; // Troncature explicite du nom à 10 caractères max
@@ -3298,10 +3299,8 @@ static void GetHistoryItemText(uint8_t index, char* buffer) {
     
     const char *blacklistPrefix = HBlacklisted[index] ? "#" : "";
 
-    // --- 2. Détermination de l'espace nécessaire (Max 18 chars) ---
     const size_t MAX_LINE_CHARS = 18; 
     
-    // Construction de la chaîne du compteur (Ex: ":5" ou ":1234")
     char dcountStr[6]; 
     snprintf(dcountStr, sizeof(dcountStr), ":%u", dcount);
 
@@ -3454,7 +3453,7 @@ static void RenderHistoryList() {
     memset(gFrameBuffer, 0, sizeof(gFrameBuffer));
     
     if (!SpectrumMonitor) {
-      sprintf(headerString, "HISTORY: %d", indexFs);
+      sprintf(headerString, "HISTORY: %d", CountValidHistoryItems());
       UI_PrintStringSmall(headerString, 1, LCD_WIDTH - 1, 0, 0);
     } else DrawMeter(0);
     
