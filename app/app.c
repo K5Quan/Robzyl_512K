@@ -719,10 +719,8 @@ void APP_TimeSlice10ms(void)
 
 	if (gCurrentFunction == FUNCTION_TRANSMIT)
 	{	// transmitting
-		#ifdef ENABLE_AUDIO_BAR
 			if ((gFlashLightBlinkCounter % (150 / 10)) == 0) // once every 150ms
 				UI_DisplayAudioBar();
-		#endif
 	}
 
 	if (gUpdateDisplay)

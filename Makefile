@@ -1,5 +1,5 @@
 AUTHOR_STRING := ""
-VERSION_STRING := V5.5.30
+VERSION_STRING := V6_TURBO
 # compile options (see README.md for descriptions)
 # 0 = disable
 # 1 = enable

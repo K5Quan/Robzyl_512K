@@ -487,9 +487,17 @@ void RADIO_SetupRegisters(bool switchToForeground)
 
 	BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
 
-	BK4819_FilterBandwidth_t Bandwidth = gTxVfo->CHANNEL_BANDWIDTH;
+// Фикс слабого RX в VFO — всегда wide (25kHz) + dynamic (как в MR и спектре) NEW IGGI ЧИНИМ ВФО
+	//BK4819_FilterBandwidth_t Bandwidth = gTxVfo->CHANNEL_BANDWIDTH;    // эту убрать и эта в стоке
+    //BK4819_SetFilterBandwidth(Bandwidth, gTxVfo->Modulation != MODULATION_AM); эта в стоке 
+	//BK4819_SetFilterBandwidth(Bandwidth, true);     // всегда true и эту убрать
+	
+	// Фикс RX в VFO — всегда dynamic = true (даже если AM)
+     BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, true); //эту вернуть она одна за всех
 
-	BK4819_SetFilterBandwidth(Bandwidth, gTxVfo->Modulation != MODULATION_AM);
+
+
+
 	
 	BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
 
@@ -531,7 +539,8 @@ void RADIO_SetupRegisters(bool switchToForeground)
     (62u <<  4) |     // AF Rx Gain-2 = Max
     (12u <<  0));     // AF DAC Gain = 12 (loud and clear)
 	BK4819_InitAGC(gEeprom.RX_AGC, gTxVfo->Modulation);
-
+	// Принудительно fast AGC для лучшего приёма слабых сигналов//NEW IGGI ЧИНИМ ВФО
+	BK4819_InitAGC(RX_AGC_FAST, gTxVfo->Modulation);
 
 	uint16_t InterruptMask = BK4819_REG_3F_SQUELCH_FOUND | BK4819_REG_3F_SQUELCH_LOST;
 

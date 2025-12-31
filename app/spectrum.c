@@ -1448,17 +1448,13 @@ static void UpdateCssDetection(void) {
 } */
 
 static void DrawF(uint32_t f) {
-    if (f < 1400000 || f > 130000000) return;
+    if ((f == 0) || f < 1400000 || f > 130000000) return;
     char freqStr[18];
     FormatFrequency(f, freqStr, sizeof(freqStr));
-    //if(ShowLines > 1)UpdateCssDetection();
     UpdateCssDetection(); // субтон новый
-    //char enabledLists[64];
-    //BuildEnabledScanLists(enabledLists, sizeof(enabledLists));
-    f = HFreqs[historyListIndex];
     uint16_t channelFd = BOARD_gMR_fetchChannel(f);
     isKnownChannel = (channelFd != 0xFFFF);
-    
+    uint16_t channelH = BOARD_gMR_fetchChannel(HFreqs[historyListIndex]);
     char line1[19] = "";
     char line1b[19] = "";
     char line2[19] = "";
@@ -1475,8 +1471,9 @@ static void DrawF(uint32_t f) {
     if (appMode == SCAN_BAND_MODE) {
         snprintf(prefix, sizeof(prefix), "B%u ", bl + 1);
         snprintf(line2, sizeof(line2), "%-3s%s", prefix, BParams[bl].BandName);
-    } else if (appMode == CHANNEL_MODE) {
-            if (gNextTimeslice_1s && ShowLines > 2){
+    } else {
+        if (appMode == CHANNEL_MODE) {
+            if (gNextTimeslice_1s && ShowLines == 1){
               ReadChannelName(channelFd,channelName);
               gNextTimeslice_1s = 0;
             }
@@ -1487,17 +1484,10 @@ static void DrawF(uint32_t f) {
                     len = sprintf(prefix, "ALL ");
                     pos += len;
               }
-              //if (isKnownChannel && channelName[0] && isListening) {
-              if (isKnownChannel && channelName[0]) {
-                    len = sprintf(line2,"%-3s%s ", prefix, channelName);
-                    pos += len;
-                } else {
-                    len = sprintf(line2, "%s ", prefix);
-                    //pos += len;
-                }
+            len = sprintf(line2,"%-3s%s ", prefix, channelName);
             }
-    
-     pos = 0;
+          }
+        pos = 0;
         sprintf(line3b,">");
         if (WaitSpectrum > 0 && WaitSpectrum <61000) {
               len = sprintf(&line3b[pos],"End %d ", WaitSpectrum/1000);
@@ -1516,71 +1506,41 @@ static void DrawF(uint32_t f) {
       }
     
     if (f > 0 && historyListIndex <HISTORY_SIZE) {
-      formatHistory(line3, channelFd, f);
+      formatHistory(line3, channelH, f);
     }
     else {
         snprintf(line3, sizeof(line3), "EMPTY");
       }
     
-   // AFFICHAGE// СТРОКИ СПЕКТРА 3шт
     if (classic) {
-        if (ShowLines < 3) {
-            // Режим 1: только частота + CSS (одна строка обычным шрифтом)
             if (ShowLines == 2) {
-               //UI_PrintStringSmall(line1b, 0, 0, 0, 0);  // строка 1: частота + CSS
-                UI_DisplayFrequency(line1, 9, 0, 0);  // большая частота (большим шрифтом)
+                UI_DisplayFrequency(line1, 9, 0, 0);  // BIG FREQUENCY
                 GUI_DisplaySmallestDark(StringCode, 70, 17, false, false);  // CSS субтон
-               // GUI_DisplaySmallestDark(line1,      0, 24, false, false);  // частота
                 GUI_DisplaySmallestDark(line2,      8, 17, false, true);  // имя канала / бэнд / список
-                 //GUI_DisplaySmallestDark(line3,  60, 16, false, false);  // история
-                 GUI_DisplaySmallestDark	("8 MORE", 98, 17, false, false);  
+                GUI_DisplaySmallestDark	("CHANNEL", 96, 17, false, false);  
                 ArrowLine = 3;
             }
 
-            // Режим 2: частота + CSS + имя канала/SL (две строки обычным шрифтом) БЕЛЫЙ
             if (ShowLines == 1) {
-                UI_PrintStringSmall(line1b, 10, 1, 0, 0);  // строка 1: частота + CSS
-                UI_PrintStringSmall(line2,  10, 1, 1, 0);  // строка 2: имя канала / SL / бэнд
-                
-                // Мелкие данные dark-шрифтом (ниже обычных строк)
+                UI_PrintStringSmall(line1b, 10, 1, 0, 0);  // F + CSS
+                UI_PrintStringSmall(line2,  10, 1, 1, 0);  // SL or BD + Name
                 GUI_DisplaySmallestDark(line3b, 8,17, false, false);  // таймеры
                 GUI_DisplaySmallestDark(line3,  30, 17, false, false);  // история
-                GUI_DisplaySmallestDark	("SCAN",     106, 17, false, false);   
-              
+                GUI_DisplaySmallestDark	("HISTORY",     96, 17, false, false);   
                 ArrowLine = 3;
             }
-
-            /*/ Режим 3: частота + CSS + имя + мелкие данные dark-шрифтом ниже
-            if (ShowLines == 3) {
-              UI_PrintStringSmall(line1b, 1, 1, 0, 1);  // строка 1: частота + CSS
-                UI_PrintStringSmall(line2,  1, 1, 1, 1);  // строка 2: имя канала / SL / бэнд
-
-                // Мелкие данные dark-шрифтом (ниже обычных строк)
-                GUI_DisplaySmallestDark(line3b, 35, 17, false, false);  // таймеры
-                GUI_DisplaySmallestDark(line3,  70, 17, false, false);  // история
-                GUI_DisplaySmallestDark	("SCAN",     3, 17, false, true);  
-               
-                ArrowLine = 3;  // стрелка на второй строке (можно 3, если хочешь на таймерах)
-            }*/
-        }
-
-
-
-   
-//*******************МАКСИМАЛЬНОЕ**************ЗНАЧЕНИЕ В НИЭНЕЙ СТРОКЕ ЦЕНТР*/
- if (Fmax) {
+    if (Fmax) 
+      {
           FormatFrequency(Fmax, freqStr, sizeof(freqStr));
           GUI_DisplaySmallest(freqStr,  50, Bottom_print, false,true);
-      } 
-     
-
-    } else {
-        DrawMeter(6);
-        if (StringCode[0]) {UI_PrintStringSmall(line1b, 1, 1, 0,1);}
-        else UI_DisplayFrequency(line1, 0, 0, 0);
-        UI_PrintString(line2, 1, 1, 2, 8);
-        UI_PrintString(line3b, 1, 1, 4, 8);
       }
+      } else { //Not Classic
+          DrawMeter(6);
+          if (StringCode[0]) {UI_PrintStringSmall(line1b, 1, 1, 0,1);}
+          else UI_DisplayFrequency(line1, 0, 0, 0);
+          UI_PrintString(line2, 1, 1, 2, 8);
+          UI_PrintString(line3b, 1, 1, 4, 8);
+        }
 }
 
 static void LookupChannelInfo() {
@@ -2974,7 +2934,7 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
         else if (Spectrum_state == 2) mode = SCAN_BAND_MODE ;
         else if (Spectrum_state == 1) mode = CHANNEL_MODE ;
         else mode = FREQUENCY_MODE;
-
+        BK4819_SetFilterBandwidth(BK4819_FILTER_BW_NARROW, false);  // принудительно узкий в спектре ЧИНИМ ВФО
         EEPROM_WriteBuffer(0x1D00, &Spectrum_state);
         if (!Key_1_pressed) LoadSettings(0);
         appMode = mode;

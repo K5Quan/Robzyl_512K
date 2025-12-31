@@ -120,6 +120,10 @@ void BK4819_Init(void)
 	BK4819_WriteRegister(BK4819_REG_3F, 0);
 	BK4819_WriteRegister(BK4819_REG_73, 0x4692);
 
+	SYSTEM_DelayMs(50);  // Delay 50ms after init to wake up BK4819 ЧИНИМ ПРИЕМ ПОСЛЕ ВКЛЮЧЕНИЯ
+BK4819_RX_TurnOn();  // Force RX on
+SYSTEM_DelayMs(10);  // Small delay for PLL lock
+
 }
 
 static uint16_t BK4819_ReadU16(void) {
@@ -280,10 +284,12 @@ void BK4819_InitAGC(const uint8_t agcType, ModulationMode_t modulation)
 	if(modulation==MODULATION_AM)
 	{
 		//AM modulation
+		BK4819_WriteRegister(0x13, 0x3FF );
 		switch(agcType)
 		{	
+			
 			case RX_AGC_SLOW:
-				BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (5 << 0));
+				BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (15 << 0));
 				break;
 			case RX_AGC_FAST:
 				BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (20 << 0));
@@ -295,10 +301,11 @@ void BK4819_InitAGC(const uint8_t agcType, ModulationMode_t modulation)
 	else
 	{
 		//FM, USB modulation
+		BK4819_WriteRegister(0x13, 0x0295);
 				switch(agcType)
 		{	
 			case RX_AGC_SLOW:
-				BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (46 << 0));
+				BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (56 << 0));
 				break;
 			case RX_AGC_FAST:
 				BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
@@ -307,7 +314,7 @@ void BK4819_InitAGC(const uint8_t agcType, ModulationMode_t modulation)
 				return;
 		}
 	}
-	LoadSettings(1);
+	//LoadSettings(1);
 	// switched values to ones from 1o11 am_fix:
 	BK4819_WriteRegister(BK4819_REG_7B, 0x8420); //Test 4.15
 	BK4819_WriteRegister(BK4819_REG_12, 0x0393);  // 0x037B / 000000 11 011 11 011 / -24dB
@@ -709,6 +716,7 @@ void BK4819_RX_TurnOn(void)
 	// Turn off everything
 	BK4819_WriteRegister(BK4819_REG_30, 0);
 
+	SYSTEM_DelayMs(10);  // Delay for RX activation ЧИНИМ ПРИЕМ 
 
 	BK4819_WriteRegister(BK4819_REG_30, 
 		BK4819_REG_30_ENABLE_VCO_CALIB |

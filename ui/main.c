@@ -108,7 +108,7 @@ void DrawLevelBar(uint8_t xpos, uint8_t y_pos, uint8_t level_percent)
 // АУДИОБАР ПРИ ПЕРЕДАЧЕ — секции 3 пикселя + пробел 2 пикселя, раздельные X и Y для MR и VFO
 void UI_DisplayAudioBar(void)
 {
-	if(gLowBattery && !gLowBatteryConfirmed) return;
+	//if(gLowBattery && !gLowBatteryConfirmed) return;
 
 	if (gCurrentFunction != FUNCTION_TRANSMIT || gScreenToDisplay != DISPLAY_MAIN) 
 		return;
@@ -727,7 +727,7 @@ static const vertical_dashed_t mr_vlines[] = {
 		// MR-режим — две строки
 		//GUI_DisplaySmallest("MR MODE",     1, 2, false, true); 
 		GUI_DisplaySmallestDark	("MR MODE",     0, 1, false, true);    // false, true шаг между символами
-		GUI_DisplaySmallestDark("CHANEL",     90, 1, false, true);   // X=8,  Y=18
+		GUI_DisplaySmallestDark("CHANNEL",     90, 1, false, true);   // X=8,  Y=18
 		GUI_DisplaySmallestDark("SQL",  6, 40, false, false);
 		GUI_DisplaySmallestDark("BAND", 28, 40, false, false);
 		GUI_DisplaySmallestDark("STEP", 58, 40, false, false);
