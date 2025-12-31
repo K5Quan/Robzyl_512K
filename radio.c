@@ -487,18 +487,11 @@ void RADIO_SetupRegisters(bool switchToForeground)
 
 	BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
 
-// Фикс слабого RX в VFO — всегда wide (25kHz) + dynamic (как в MR и спектре) NEW IGGI ЧИНИМ ВФО
-	//BK4819_FilterBandwidth_t Bandwidth = gTxVfo->CHANNEL_BANDWIDTH;    // эту убрать и эта в стоке
-    //BK4819_SetFilterBandwidth(Bandwidth, gTxVfo->Modulation != MODULATION_AM); эта в стоке 
-	//BK4819_SetFilterBandwidth(Bandwidth, true);     // всегда true и эту убрать
-	
-	// Фикс RX в VFO — всегда dynamic = true (даже если AM)
-     BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, true); //эту вернуть она одна за всех
+	BK4819_FilterBandwidth_t Bandwidth = gTxVfo->CHANNEL_BANDWIDTH;
+	BK4819_SetFilterBandwidth(Bandwidth, gTxVfo->Modulation != MODULATION_AM);
 
+    //BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, true);
 
-
-
-	
 	BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
 
 	BK4819_SetupPowerAmplifier(0, 0);

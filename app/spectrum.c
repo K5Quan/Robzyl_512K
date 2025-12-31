@@ -223,10 +223,26 @@ static uint8_t validScanListIndices[MAX_VALID_SCANLISTS]; // stocke les index va
 
 
 const RegisterSpec allRegisterSpecs[] = {
-    {"LNAs",  0x13, 8, 0b11,  1},
-    {"LNA",   0x13, 5, 0b111, 1},
-    {"PGA",   0x13, 0, 0b111, 1},
-    {"MIX",   0x13, 3, 0b11,  1},
+    {"10_LNAs",  0x10, 8, 0b11,  1},
+    {"10_LNA",   0x10, 5, 0b111, 1},
+    {"10_PGA",   0x10, 0, 0b111, 1},
+    {"10_MIX",   0x10, 3, 0b11,  1},
+    {"11_LNAs",  0x11, 8, 0b11,  1},
+    {"11_LNA",   0x11, 5, 0b111, 1},
+    {"11_PGA",   0x11, 0, 0b111, 1},
+    {"11_MIX",   0x11, 3, 0b11,  1},
+    {"12_LNAs",  0x12, 8, 0b11,  1},
+    {"12_LNA",   0x12, 5, 0b111, 1},
+    {"12_PGA",   0x12, 0, 0b111, 1},
+    {"12_MIX",   0x12, 3, 0b11,  1},
+    {"13_LNAs",  0x13, 8, 0b11,  1},
+    {"13_LNA",   0x13, 5, 0b111, 1},
+    {"13_PGA",   0x13, 0, 0b111, 1},
+    {"13_MIX",   0x13, 3, 0b11,  1},
+    {"14_LNAs",  0x14, 8, 0b11,  1},
+    {"14_LNA",   0x14, 5, 0b111, 1},
+    {"14_PGA",   0x14, 0, 0b111, 1},
+    {"14_MIX",   0x14, 3, 0b11,  1},
     {"XTAL F Mode Select", 0x3C, 6, 0b11, 1},
     {"OFF AF Rx de-emp", 0x2B, 8, 1, 1},
     {"Gain after FM Demod", 0x43, 2, 1, 1},
@@ -852,16 +868,13 @@ static void ToggleRX(bool on) {
     if (SPECTRUM_PAUSED) return;
     if(!on && SpectrumMonitor == 2) {isListening = 1;return;}
     isListening = on;
-    // automatically switch modulation & bw if known chanel
     if (on && isKnownChannel) {
         if(!gForceModulation) settings.modulationType = channelModulation;
-        //NO NAMES memmove(rxChannelName, channelName, sizeof(rxChannelName));
-        BK4819_InitAGC(gEeprom.RX_AGC, settings.modulationType);
-        
+        BK4819_InitAGCSpectrum(settings.modulationType);
     }
     else if(on && appMode == SCAN_BAND_MODE) {
             if (!gForceModulation) settings.modulationType = BParams[bl].modulationType;
-            BK4819_InitAGC(gEeprom.RX_AGC, settings.modulationType);
+            BK4819_InitAGCSpectrum(settings.modulationType);
           }
     
     if (on) { 
@@ -873,8 +886,6 @@ static void ToggleRX(bool on) {
         BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, false); //Scan in 25K bandwidth
         if(appMode!=CHANNEL_MODE) BK4819_WriteRegister(0x43, GetBWRegValueForScan());
         BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, 0);
-        //RADIO_SetModulation(MODULATION_FM);
-        //BK4819_InitAGC(gEeprom.RX_AGC, MODULATION_FM);
     }
     ToggleAudio(on);
     ToggleAFDAC(on);
@@ -1082,7 +1093,7 @@ static void ToggleModulation() {
     settings.modulationType = MODULATION_FM;
   }
   RADIO_SetModulation(settings.modulationType);
-  BK4819_InitAGC(gEeprom.RX_AGC, settings.modulationType);
+  BK4819_InitAGCSpectrum(settings.modulationType);
   gForceModulation = 1;
 }
 
@@ -1380,16 +1391,6 @@ switch(SpectrumMonitor) {
   GUI_DisplaySmallest(String, 112, 1, true,true);
 }
 
-static void formatHistory(char *buf, uint16_t Channel, uint32_t freq) {
-    char freqStr[10];
-    char Name[12];
-    snprintf(freqStr, sizeof(freqStr), "%u.%05u", freq / 100000, freq % 100000);
-    RemoveTrailZeros(freqStr);
-    if (Channel != 0xFFFF) ReadChannelName(Channel, Name);
-    snprintf(buf, 19, "%s %s", freqStr,Name);
-}
-
-
 // ------------------ Frequency string ------------------
 static void FormatFrequency(uint32_t f, char *buf, size_t buflen) {
     snprintf(buf, buflen, "%u.%05u", f / 100000, f % 100000);
@@ -1432,21 +1433,6 @@ static void UpdateCssDetection(void) {
     StringCode[0] = '\0';
 }
 
-// ------------------ Enabled scan lists ------------------
-/* static void BuildEnabledScanLists(char *buf, size_t buflen) {
-    buf[0] = '\0';
-    bool first = true;
-    for (int i = 0; i < 15; i++) {
-        if (settings.scanListEnabled[i]) {
-            if (!first) strncat(buf, ",", buflen - strlen(buf) - 1);
-            char listNum[4];
-            snprintf(listNum, sizeof(listNum), "%d", i + 1);
-            strncat(buf, listNum, buflen - strlen(buf) - 1);
-            first = false;
-        }
-    }
-} */
-
 static void DrawF(uint32_t f) {
     if ((f == 0) || f < 1400000 || f > 130000000) return;
     char freqStr[18];
@@ -1454,12 +1440,10 @@ static void DrawF(uint32_t f) {
     UpdateCssDetection(); // субтон новый
     uint16_t channelFd = BOARD_gMR_fetchChannel(f);
     isKnownChannel = (channelFd != 0xFFFF);
-    uint16_t channelH = BOARD_gMR_fetchChannel(HFreqs[historyListIndex]);
     char line1[19] = "";
     char line1b[19] = "";
     char line2[19] = "";
     char line3[32] = "";
-    char line3b[32] = "";
     
     sprintf(line1, "%s", freqStr);
     sprintf(line1b, "%s %s",freqStr, StringCode);
@@ -1488,30 +1472,24 @@ static void DrawF(uint32_t f) {
             }
           }
         pos = 0;
-        sprintf(line3b,">");
+        
         if (WaitSpectrum > 0 && WaitSpectrum <61000) {
-              len = sprintf(&line3b[pos],"End %d ", WaitSpectrum/1000);
+              len = sprintf(&line3[pos],"End %d ", WaitSpectrum/1000);
               pos += len;
         } else if (WaitSpectrum > 61000){
-            len = sprintf(&line3b[pos],"End OO "); //locked
+            len = sprintf(&line3[pos],"End OO "); //locked
             pos += len;
         }
         if (isListening){
             if (MaxListenTime){
-                  len = sprintf(&line3b[pos],"Max %d/%s", spectrumElapsedCount/1000, labels[IndexMaxLT]);
+                  len = sprintf(&line3[pos],"Max %d/%s", spectrumElapsedCount/1000, labels[IndexMaxLT]);
                   pos += len;
             } else {
-                  len = sprintf(&line3b[pos],"Rx %d ", spectrumElapsedCount/1000); //elapsed receive time
+                  len = sprintf(&line3[pos],"Rx %d ", spectrumElapsedCount/1000); //elapsed receive time
             }
       }
     
-    if (f > 0 && historyListIndex <HISTORY_SIZE) {
-      formatHistory(line3, channelH, f);
-    }
-    else {
-        snprintf(line3, sizeof(line3), "EMPTY");
-      }
-    
+   
     if (classic) {
             if (ShowLines == 2) {
                 UI_DisplayFrequency(line1, 9, 0, 0);  // BIG FREQUENCY
@@ -1524,9 +1502,8 @@ static void DrawF(uint32_t f) {
             if (ShowLines == 1) {
                 UI_PrintStringSmall(line1b, 10, 1, 0, 0);  // F + CSS
                 UI_PrintStringSmall(line2,  10, 1, 1, 0);  // SL or BD + Name
-                GUI_DisplaySmallestDark(line3b, 8,17, false, false);  // таймеры
-                GUI_DisplaySmallestDark(line3,  30, 17, false, false);  // история
-                GUI_DisplaySmallestDark	("HISTORY",     96, 17, false, false);   
+                GUI_DisplaySmallestDark(line3, 8,17, false, false);  // таймеры
+                GUI_DisplaySmallestDark	("TIME",     96, 17, false, false);   
                 ArrowLine = 3;
             }
     if (Fmax) 
@@ -1539,7 +1516,7 @@ static void DrawF(uint32_t f) {
           if (StringCode[0]) {UI_PrintStringSmall(line1b, 1, 1, 0,1);}
           else UI_DisplayFrequency(line1, 0, 0, 0);
           UI_PrintString(line2, 1, 1, 2, 8);
-          UI_PrintString(line3b, 1, 1, 4, 8);
+          UI_PrintString(line3, 1, 1, 4, 8);
         }
 }
 
@@ -2934,7 +2911,7 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
         else if (Spectrum_state == 2) mode = SCAN_BAND_MODE ;
         else if (Spectrum_state == 1) mode = CHANNEL_MODE ;
         else mode = FREQUENCY_MODE;
-        BK4819_SetFilterBandwidth(BK4819_FILTER_BW_NARROW, false);  // принудительно узкий в спектре ЧИНИМ ВФО
+        //BK4819_SetFilterBandwidth(BK4819_FILTER_BW_NARROW, false);  // принудительно узкий в спектре ЧИНИМ ВФО
         EEPROM_WriteBuffer(0x1D00, &Spectrum_state);
         if (!Key_1_pressed) LoadSettings(0);
         appMode = mode;
@@ -3062,7 +3039,11 @@ typedef struct {
     uint16_t R29;                      // AF TX noise compressor, AF TX 0dB compressor, AF TX compression ratio
     uint16_t R19;                      // Disable MIC AGC
     uint16_t R73;                      // AFC range select
+    uint16_t R10;
+    uint16_t R11;
+    uint16_t R12;
     uint16_t R13;
+    uint16_t R14;
     uint16_t R3C;
     uint16_t R43;
     uint16_t R2B;
@@ -3080,7 +3061,12 @@ void LoadSettings(bool LNA)
 {
   SettingsEEPROM  eepromData  = {0};
   EEPROM_ReadBuffer(0x1D10, &eepromData, sizeof(eepromData));
+  
+  BK4819_WriteRegister(BK4819_REG_10, eepromData.R10);
+  BK4819_WriteRegister(BK4819_REG_11, eepromData.R11);
+  BK4819_WriteRegister(BK4819_REG_12, eepromData.R12);
   BK4819_WriteRegister(BK4819_REG_13, eepromData.R13);
+  BK4819_WriteRegister(BK4819_REG_14, eepromData.R14);
   if (LNA) return;
   if(!IsVersionMatching()) ClearSettings();
   for (int i = 0; i < 15; i++) {
@@ -3168,7 +3154,11 @@ static void SaveSettings()
   eepromData.R29 = BK4819_ReadRegister(BK4819_REG_29);
   eepromData.R19 = BK4819_ReadRegister(BK4819_REG_19);
   eepromData.R73 = BK4819_ReadRegister(BK4819_REG_73);
+  eepromData.R10 = BK4819_ReadRegister(BK4819_REG_10);
+  eepromData.R11 = BK4819_ReadRegister(BK4819_REG_11);
+  eepromData.R12 = BK4819_ReadRegister(BK4819_REG_12);
   eepromData.R13 = BK4819_ReadRegister(BK4819_REG_13);
+  eepromData.R14 = BK4819_ReadRegister(BK4819_REG_14);
   eepromData.R3C = BK4819_ReadRegister(BK4819_REG_3C);
   eepromData.R43 = BK4819_ReadRegister(BK4819_REG_43);
   eepromData.R2B = BK4819_ReadRegister(BK4819_REG_2B);
@@ -3240,7 +3230,11 @@ void ClearSettings()
   BK4819_WriteRegister(BK4819_REG_29, 43840);
   BK4819_WriteRegister(BK4819_REG_19, 4161);
   BK4819_WriteRegister(BK4819_REG_73, 18066);
-  BK4819_WriteRegister(BK4819_REG_13, 958);
+  BK4819_WriteRegister(BK4819_REG_10, 0x0038);
+  BK4819_WriteRegister(BK4819_REG_11, 0x025a);
+  BK4819_WriteRegister(BK4819_REG_12, 0x037b);
+  BK4819_WriteRegister(BK4819_REG_13, 0x03de);
+  BK4819_WriteRegister(BK4819_REG_14, 0x0000);
   BK4819_WriteRegister(BK4819_REG_3C, 20360);
   BK4819_WriteRegister(BK4819_REG_43, 13896);
   BK4819_WriteRegister(BK4819_REG_2B, 49152);

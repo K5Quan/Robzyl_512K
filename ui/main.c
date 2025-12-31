@@ -105,36 +105,25 @@ void DrawLevelBar(uint8_t xpos, uint8_t y_pos, uint8_t level_percent)
     }
 }
 
-// АУДИОБАР ПРИ ПЕРЕДАЧЕ — секции 3 пикселя + пробел 2 пикселя, раздельные X и Y для MR и VFO
 void UI_DisplayAudioBar(void)
 {
-	//if(gLowBattery && !gLowBatteryConfirmed) return;
-
-	if (gCurrentFunction != FUNCTION_TRANSMIT || gScreenToDisplay != DISPLAY_MAIN) 
-		return;
+	if(gLowBattery && !gLowBatteryConfirmed) return;
+	if (gCurrentFunction != FUNCTION_TRANSMIT || gScreenToDisplay != DISPLAY_MAIN) return;
 			
 	#if defined(ENABLE_TX1750)
 		if (gAlarmState != ALARM_STATE_OFF)	return;
 	#endif
 
 	const unsigned int voice_amp  = BK4819_GetVoiceAmplitudeOut();
-
-	// Увеличенная чувствительность — тихий голос показывает больше секций
-	unsigned int amplified = voice_amp * 3;  // коэффициент усиления (3 — хороший баланс, меняй на 4-5 для ещё больше)
-	if (amplified > 65535u) amplified = 65535u;
-
-	uint8_t level_percent = amplified * 100 / 65535u;
-
-	// РАЗДЕЛЬНЫЕ КООРДИНАТЫ ДЛЯ MR И VFO
+	
 	uint8_t xpos_mr  = 46;   // MR: X = 5 (отступ слева)
 	uint8_t xpos_vfo = 46;  // VFO: X = 10 (отступ слева)
 	uint8_t y_mr     = 8;  // MR: Y = 50 пикселей
 	uint8_t y_vfo    = 8;  // VFO: Y = 42 пикселя
-
 	uint8_t xpos = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? xpos_mr : xpos_vfo;
 	uint8_t y_pos = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? y_mr : y_vfo;
 
-	DrawLevelBar(xpos, y_pos, level_percent);
+	DrawLevelBar(xpos, y_pos, voice_amp);
 }
 
 // S-МЕТР + AFC + RSSI + СУБТОН — всё только при активном приёме
@@ -726,12 +715,12 @@ static const vertical_dashed_t mr_vlines[] = {
 	{
 		// MR-режим — две строки
 		//GUI_DisplaySmallest("MR MODE",     1, 2, false, true); 
-		GUI_DisplaySmallestDark	("MR MODE",     0, 1, false, true);    // false, true шаг между символами
-		GUI_DisplaySmallestDark("CHANNEL",     90, 1, false, true);   // X=8,  Y=18
-		GUI_DisplaySmallestDark("SQL",  6, 40, false, false);
-		GUI_DisplaySmallestDark("BAND", 28, 40, false, false);
-		GUI_DisplaySmallestDark("STEP", 58, 40, false, false);
-		GUI_DisplaySmallestDark("POW",  88, 40, false, false);
+		GUI_DisplaySmallestDark	("MR MODE",  0, 1, false, true);    // false, true шаг между символами
+		GUI_DisplaySmallestDark("CHAN",   102, 1, false, true);   // X=8,  Y=18
+		GUI_DisplaySmallestDark("SQL",  6,   40, false, false);
+		GUI_DisplaySmallestDark("BAND", 28,  40, false, false);
+		GUI_DisplaySmallestDark("STEP", 58,  40, false, false);
+		GUI_DisplaySmallestDark("POW",  88,  40, false, false);
 		GUI_DisplaySmallestDark("MOD",  110, 40, false, false);
 	
 	}
