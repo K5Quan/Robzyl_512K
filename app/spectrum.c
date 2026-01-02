@@ -3572,6 +3572,10 @@ static void RenderParametersSelect() {
       static void RenderBandSelect() {RenderList("INT BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
 #endif
 
+#ifdef ENABLE_BR_BAND
+      static void RenderBandSelect() {RenderList("BR BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+#endif
+
 #ifdef ENABLE_PL_BAND
       static void RenderBandSelect() {RenderList("POL BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
 #endif

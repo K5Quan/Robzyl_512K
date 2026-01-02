@@ -296,42 +296,23 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	// Обычный ввод цифр
 	if (!gWasFKeyPressed)
 	{
-		bool isFreqMode = IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE);
-		if (!isFreqMode)
-			gKeyInputCountdown = key_input_timeout_500ms;
 		INPUTBOX_Append(Key);
 		gRequestDisplayScreen = DISPLAY_MAIN;
-
-		if (!isFreqMode)
-		{
-			if (gInputBoxIndex == 1 || gInputBoxIndex == 2)
-				return;
-
-			if (gInputBoxIndex == 3)
+		if (IS_MR_CHANNEL(gTxVfo->CHANNEL_SAVE))
+		{	// user is entering channel number
+			uint16_t Channel;
+			if (gInputBoxIndex != 3)
 			{
-				uint16_t Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
-				if (!RADIO_CheckValidChannel(Channel, false, 0))
-				{
-					gInputBoxIndex = 0;
-					return;
-				}
-				gEeprom.MrChannel = Channel;
-				gEeprom.ScreenChannel = Channel;
-				gRequestSaveVFO = true;
-				gVfoConfigureMode = VFO_CONFIGURE_RELOAD;
-				gRequestSaveChannel = 1;
-    			gPttWasReleased       = true;
-				gInputBoxIndex = 0;
+				gRequestDisplayScreen = DISPLAY_MAIN;
 				return;
 			}
-
 			gInputBoxIndex = 0;
-			uint16_t Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
-			if (!RADIO_CheckValidChannel(Channel, false,0)) return;
-			gEeprom.MrChannel = Channel;
+			Channel = ((gInputBox[0] * 100) + (gInputBox[1] * 10) + gInputBox[2]) - 1;
+			if (!RADIO_CheckValidChannel(Channel, false, 0)) return;
+			gEeprom.MrChannel     = Channel;
 			gEeprom.ScreenChannel = Channel;
-			gRequestSaveVFO = true;
-			gVfoConfigureMode = VFO_CONFIGURE_RELOAD;
+			gRequestSaveVFO       = true;
+			gVfoConfigureMode     = VFO_CONFIGURE_RELOAD;
 			return;
 		}
 

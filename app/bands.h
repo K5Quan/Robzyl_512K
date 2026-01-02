@@ -41,8 +41,8 @@ static const bandparameters BParams[32] = {
     {"2M (144MHz)",       14400000,        14800000,      S_STEP_12_5kHz,   MODULATION_FM},
     {"AIR VHF",           11800000,        13700000,      S_STEP_25_0kHz,   MODULATION_AM},
     {"MARINE VHF",        15600000,        16200000,      S_STEP_25_0kHz,   MODULATION_FM},
-    {"PUBLIC SAFETY",     15000000,        15600000,      S_STEP_12_5kHz,   MODULATION_FM},
-    {"70cm (430MHz)",     43000000,        44000000,      S_STEP_12_5kHz,   MODULATION_FM},
+    {"PUBLIC SAFE",     15000000,        15600000,      S_STEP_12_5kHz,   MODULATION_FM},
+    {"70cm 430MHz",     43000000,        44000000,      S_STEP_12_5kHz,   MODULATION_FM},
     {"UHF 400-470",       40000000,        47000000,      S_STEP_12_5kHz,   MODULATION_FM},
     {"LPD 433",           43305000,        43479000,      S_STEP_25_0kHz,   MODULATION_FM},
     {"PMR 446",           44600625,        44620000,      S_STEP_12_5kHz,   MODULATION_FM},
@@ -51,11 +51,11 @@ static const bandparameters BParams[32] = {
     {"RADIO TAXI",        46000000,        46200000,      S_STEP_12_5kHz,   MODULATION_FM},
     {"SECURITY",          46600000,        46800000,      S_STEP_12_5kHz,   MODULATION_FM},
     {"AIR UHF",           22500000,        40000000,      S_STEP_25_0kHz,   MODULATION_AM},
-    {"EMERG MARINE",      15550000,        15550000,      S_STEP_25_0kHz,   MODULATION_FM},  
+    {"EMERGMARINE",      15550000,        15550000,      S_STEP_25_0kHz,   MODULATION_FM},  
     {"EMERG AIR",         12150000,        12150000,      S_STEP_8_33kHz,   MODULATION_AM},  
-    {"EMERG AIR UHF",     24300000,        24300000,      S_STEP_25_0kHz,   MODULATION_AM},  
+    {"EMERGAIRUHF",     24300000,        24300000,      S_STEP_25_0kHz,   MODULATION_AM},  
     {"SAT 2m DOWN",       14580000,        14600000,      S_STEP_25_0kHz,   MODULATION_FM},
-    {"SAT 70cm DOWN",     43500000,        43800000,      S_STEP_25_0kHz,   MODULATION_FM},
+    {"SAT70cmDOWN",     43500000,        43800000,      S_STEP_25_0kHz,   MODULATION_FM},
     {"WWV 10MHz",          1000000,         1000000,      S_STEP_25_0kHz,   MODULATION_AM},
     {"CHU 7.85MHz",         785000,          785000,      S_STEP_25_0kHz,   MODULATION_AM},
     }; 
@@ -162,7 +162,7 @@ static const bandparameters BParams[32] = {
 static const bandparameters BParams[32] = {
     // BandName       Startfrequency    Stopfrequency   scanStep          modulationType
     {"AIR 25k",       11800000,         13600000,       S_STEP_25_0kHz,   MODULATION_AM},
-	{"SATCOM",        24000000,         27000000,       S_STEP_10_0kHz,   MODULATION_FM}
+	{"SATCOM",        24000000,         27000000,       S_STEP_10_0kHz,   MODULATION_FM},
 	{"HAM 144",      14400000,         14600000,       S_STEP_12_5kHz,   MODULATION_FM},
 	{"136-144",      13600000,         14400000,       S_STEP_25_0kHz,   MODULATION_FM},
 	{"146-150",      14600000,         15000000,       S_STEP_25_0kHz,   MODULATION_FM},

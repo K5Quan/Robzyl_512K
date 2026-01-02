@@ -764,42 +764,6 @@ void cancelUserInputModes(void)
 	}
 }
 
-void validateChannelInput(void)
-{
-	if (IS_MR_CHANNEL(gTxVfo->CHANNEL_SAVE) && (gInputBoxIndex == 1 || gInputBoxIndex == 2))
-	{
-		uint16_t Channel;
-
-		// Calcul du canal selon le nombre de chiffres saisis
-		switch (gInputBoxIndex) {
-			case 2:
-				// 2 chiffres saisis (validation automatique)
-				Channel = ((gInputBox[0] * 10) + gInputBox[1]) - 1;
-				break;
-			case 1:
-				// 1 chiffre saisi (validation automatique)
-				Channel = gInputBox[0] - 1;
-				break;
-			default:
-				return;
-		}
-
-		if (RADIO_CheckValidChannel(Channel, false, 0)) 
-		{
-			gEeprom.MrChannel     = Channel;
-			gEeprom.ScreenChannel = Channel;
-			gRequestSaveVFO       = true;
-			gVfoConfigureMode     = VFO_CONFIGURE_RELOAD;
-			gRequestSaveChannel = 1;
-    		gPttWasReleased       = true;
-		}
-		
-		// Réinitialiser dans tous les cas
-		gInputBoxIndex = 0;
-		
-	}
-}
-
 // this is called once every 500ms
 void APP_TimeSlice500ms(void)
 {
@@ -808,23 +772,7 @@ void APP_TimeSlice500ms(void)
 	if (gKeypadLocked > 0)
 		if (--gKeypadLocked == 0)
 			
-
-	if (gKeyInputCountdown > 0)
-	{
-		if (--gKeyInputCountdown == 0)
-		{
-			if (IS_MR_CHANNEL(gTxVfo->CHANNEL_SAVE) && (gInputBoxIndex == 1 || gInputBoxIndex == 2))
-			{
-				validateChannelInput();
-			}
-			else
-			{
-				// Pas de timeout pour les fréquences
-				if (!IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE)) cancelUserInputModes();
-			}
-		}
-	}
-
+	if (gKeyInputCountdown > 0)	--gKeyInputCountdown;
 
 	if (gMenuCountdown > 0)
 		{if (--gMenuCountdown == 0) exit_menu = (gScreenToDisplay == DISPLAY_MENU);}// exit menu mode
