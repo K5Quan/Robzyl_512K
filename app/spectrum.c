@@ -89,7 +89,9 @@ static uint8_t Noislvl_ON = 50;
 static uint16_t osdPopupSetting = 500;       // case 16
 static uint16_t UOO_trigger = 15;            // case 17
 static uint8_t AUTO_KEYLOCK = AUTOLOCK_OFF;  // case 18
-#define PARAMETER_COUNT 19
+static uint8_t Gain3D_Index = 1;             // case 19 
+static bool    Enable2XIF = 0;               // case 20 
+#define PARAMETER_COUNT 21
 ////////////////////////////////////////////////////////////////////
 
 uint8_t  gKeylockCountdown = 0;
@@ -253,115 +255,107 @@ const RegisterSpec allRegisterSpecs[] = {
     {"AFC Range Select", 0x73, 11, 0b111, 1},
     {"AFC Disable", 0x73, 4, 1, 1},
     {"AFC Speed", 0x73, 5, 0b111111, 1},
-
-
-    /*
     {"IF step100x", 0x3D, 0, 0xFFFF, 100},
     {"IF step1x", 0x3D, 0, 0xFFFF, 1},
     {"RFfiltBW1.7-4.5khz ", 0x43, 12, 0b111, 1},
-    {"RFfiltBWweak1.7-4.5khz", 0x43, 9, 0b111, 1},
-    {"BW Mode Selection", 0x43, 4, 0b11, 1},
-    {"XTAL F Low-16bits", 0x3B, 0, 0xFFFF, 1},
-    {"XTAL F Low-16bits 100", 0x3B, 0, 0xFFFF, 100},
-    {"XTAL F High-8bits", 0x3C, 8, 0xFF, 1},
-    {"XTAL F reserved flt", 0x3C, 0, 0b111111, 1},
-    {"XTAL Enable", 0x37, 1, 1, 1},
-    {"ANA LDO Selection", 0x37, 11, 1, 1},
-    {"VCO LDO Selection", 0x37, 10, 1, 1},
-    {"RF LDO Selection", 0x37, 9, 1, 1},
-    {"PLL LDO Selection", 0x37, 8, 1, 1},
-    {"ANA LDO Bypass", 0x37, 7, 1, 1},
-    {"VCO LDO Bypass", 0x37, 6, 1, 1},
-    {"RF LDO Bypass", 0x37, 5, 1, 1},
-    {"PLL LDO Bypass", 0x37, 4, 1, 1},
-    {"Freq Scan Indicator", 0x0D, 15, 1, 1},
-    {"F Scan High 16 bits", 0x0D, 0, 0xFFFF, 1},
-    {"F Scan Low 16 bits", 0x0E, 0, 0xFFFF, 1},
-    {"AGC fix", 0x7E, 15, 0b1, 1},
-    {"AGC idx", 0x7E, 12, 0b111, 1},
-    {"49", 0x49, 0, 0xFFFF, 100},
-    {"7B", 0x7B, 0, 0xFFFF, 100},
-    {"rssi_rel", 0x65, 8, 0xFF, 1},
-    {"agc_rssi", 0x62, 8, 0xFF, 1},
-    {"lna_peak_rssi", 0x62, 0, 0xFF, 1},
-    {"rssi_sq", 0x67, 0, 0xFF, 1},
-    {"weak_rssi 1", 0x0C, 7, 1, 1},
-    {"ext_lna_gain set", 0x2C, 0, 0b11111, 1},
-    {"snr_out", 0x61, 8, 0xFF, 1},
-    {"noise sq", 0x65, 0, 0xFF, 1},
-    {"glitch", 0x63, 0, 0xFF, 1},
-    {"soft_mute_en 1", 0x20, 12, 1, 1},
-    {"SNR Threshold SoftMut", 0x20, 0, 0b111111, 1},
-    {"soft_mute_atten", 0x20, 6, 0b11, 1},
-    {"soft_mute_rate", 0x20, 8, 0b11, 1},
-    {"Band Selection Thr", 0x3E, 0, 0xFFFF, 100},
-    {"chip_id", 0x00, 0, 0xFFFF, 1},
-    {"rev_id", 0x01, 0, 0xFFFF, 1},
-    {"aerror_en 0am 1fm", 0x30, 9, 1, 1},
-    {"bypass 1tx 0rx", 0x47, 0, 1, 1},
-    {"bypass tx gain 1", 0x47, 1, 1, 1},
-    {"bps afdac 3tx 9rx ", 0x47, 8, 0b1111, 1},
-    {"bps tx dcc=0 ", 0x7E, 3, 0b111, 1},
-    {"audio_tx_mute1", 0x50, 15, 1, 1},
-    {"audio_tx_limit_bypass1", 0x50, 10, 1, 1},
-    {"audio_tx_limit320", 0x50, 0, 0x3FF, 1},
-    {"audio_tx_limit reserved7", 0x50, 11, 0b1111, 1},
-    {"audio_tx_path_sel", 0x2D, 2, 0b11, 1},
-    {"AFTx Filt Bypass All", 0x47, 0, 1, 1},
-    {"3kHz AF Resp K Tx", 0x74, 0, 0xFFFF, 100},
-    {"MIC Sensit Tuning", 0x7D, 0, 0b11111, 1},
-    {"DCFiltBWTxMICIn15-480hz", 0x7E, 3, 0b111, 1},
-    {"04 768", 0x04, 0, 0x0300, 1},
-    {"43 32264", 0x43, 0, 0x7E08, 1},
-    {"4b 58434", 0x4b, 0, 0xE442, 1},
-    {"73 22170", 0x73, 0, 0x569A, 1},
-    {"7E 13342", 0x7E, 0, 0x341E, 1},
-    {"47 26432 24896", 0x47, 0, 0x6740, 1},
-    {"03 49662 49137", 0x30, 0, 0xC1FE, 1},
-    {"Enable Compander", 0x31, 3, 1, 1},
-    {"Band-Gap Enable", 0x37, 0, 1, 1},
-    {"IF step100x", 0x3D, 0, 0xFFFF, 100},
-    {"IF step1x", 0x3D, 0, 0xFFFF, 1},
-    {"Band Selection Thr", 0x3E, 0, 0xFFFF, 1},
-    {"RF filt BW ", 0x43, 12, 0b111, 1},
-    {"RF filt BW weak", 0x43, 9, 0b111, 1},
-    {"BW Mode Selection", 0x43, 4, 0b11, 1},
-    {"AF Output Inverse", 0x47, 13, 1, 1},
-    {"AF ALC Disable", 0x4B, 5, 1, 1},
-    {"AGC Fix Mode", 0x7E, 15, 1, 1},
-    {"AGC Fix Index", 0x7E, 12, 0b111, 1},
-    {"Crystal vReg Bit", 0x1A, 12, 0b1111, 1},
-    {"Crystal iBit", 0x1A, 8, 0b1111, 1},
-    {"PLL CP bit", 0x1F, 0, 0b1111, 1},
-    {"PLL/VCO Enable", 0x30, 4, 0xF, 1},
-    {"Exp AF Rx Ratio", 0x28, 14, 0b11, 1},
-    {"Exp AF Rx 0 dB", 0x28, 7, 0x7F, 1},
-    {"Exp AF Rx noise", 0x28, 0, 0x7F, 1},
-    {"OFF AFRxHPF300 flt", 0x2B, 10, 1, 1},
-    {"OFF AF RxLPF3K flt", 0x2B, 9, 1, 1},
-    
-    
-    {"AF Rx Gain1", 0x48, 10, 0x11, 1},
-    {"AF Rx Gain2", 0x48, 4, 0b111111, 1},
-    {"AF DAC G after G1 G2", 0x48, 0, 0b1111, 1},
-    {"300Hz AF Resp K Rx", 0x54, 0, 0xFFFF, 100},
-    {"300Hz AF Resp K Rx", 0x55, 0, 0xFFFF, 100},
-    {"3kHz AF Resp K Rx", 0x75, 0, 0xFFFF, 100},
-    {"DC Filt BW Rx IF In", 0x7E, 0, 0b111, 1},
-    
-
-    {"OFF AFTxHPF300filter", 0x2B, 2, 1, 1},
-    {"OFF AFTxLPF1filter", 0x2B, 1, 1, 1},
-    {"OFF AFTxpre-emp flt", 0x2B, 0, 1, 1},
-    {"PA Gain Enable", 0x30, 3, 1, 1},
-    {"PA Biasoutput 0~3", 0x36, 8, 0xFF, 1},
-    {"PA Gain1 Tuning", 0x36, 3, 0b111, 1},
-    {"PA Gain2 Tuning", 0x36, 0, 0b111, 1},
-    {"RF TxDeviation ON", 0x40, 12, 1, 1},
-    
-    {"AFTxLPF2fltBW1.7-4.5khz", 0x43, 6, 0b111, 1},
-    {"300Hz AF Resp K Tx", 0x44, 0, 0xFFFF, 100},
-    {"300Hz AF Resp K Tx", 0x45, 0, 0xFFFF, 100},*/
+//   {"RFfiltBWweak1.7-4.5khz", 0x43, 9, 0b111, 1},
+//   {"BW Mode Selection", 0x43, 4, 0b11, 1},
+//   {"XTAL F Low-16bits", 0x3B, 0, 0xFFFF, 1},
+//   {"XTAL F Low-16bits 100", 0x3B, 0, 0xFFFF, 100},
+//   {"XTAL F High-8bits", 0x3C, 8, 0xFF, 1},
+//   {"XTAL F reserved flt", 0x3C, 0, 0b111111, 1},
+//   {"XTAL Enable", 0x37, 1, 1, 1},
+//   {"ANA LDO Selection", 0x37, 11, 1, 1},
+//   {"VCO LDO Selection", 0x37, 10, 1, 1},
+//   {"RF LDO Selection", 0x37, 9, 1, 1},
+//   {"PLL LDO Selection", 0x37, 8, 1, 1},
+//   {"ANA LDO Bypass", 0x37, 7, 1, 1},
+//   {"VCO LDO Bypass", 0x37, 6, 1, 1},
+//   {"RF LDO Bypass", 0x37, 5, 1, 1},
+//   {"PLL LDO Bypass", 0x37, 4, 1, 1},
+//   {"Freq Scan Indicator", 0x0D, 15, 1, 1},
+//   {"F Scan High 16 bits", 0x0D, 0, 0xFFFF, 1},
+//   {"F Scan Low 16 bits", 0x0E, 0, 0xFFFF, 1},
+//   {"AGC fix", 0x7E, 15, 0b1, 1},
+//   {"AGC idx", 0x7E, 12, 0b111, 1},
+//   {"49", 0x49, 0, 0xFFFF, 100},
+//   {"7B", 0x7B, 0, 0xFFFF, 100},
+//   {"rssi_rel", 0x65, 8, 0xFF, 1},
+//   {"agc_rssi", 0x62, 8, 0xFF, 1},
+//   {"lna_peak_rssi", 0x62, 0, 0xFF, 1},
+//   {"rssi_sq", 0x67, 0, 0xFF, 1},
+//   {"weak_rssi 1", 0x0C, 7, 1, 1},
+//   {"ext_lna_gain set", 0x2C, 0, 0b11111, 1},
+//   {"snr_out", 0x61, 8, 0xFF, 1},
+//   {"noise sq", 0x65, 0, 0xFF, 1},
+//   {"glitch", 0x63, 0, 0xFF, 1},
+//   {"soft_mute_en 1", 0x20, 12, 1, 1},
+//   {"SNR Threshold SoftMut", 0x20, 0, 0b111111, 1},
+//   {"soft_mute_atten", 0x20, 6, 0b11, 1},
+//   {"soft_mute_rate", 0x20, 8, 0b11, 1},
+//   {"Band Selection Thr", 0x3E, 0, 0xFFFF, 100},
+//   {"chip_id", 0x00, 0, 0xFFFF, 1},
+//   {"rev_id", 0x01, 0, 0xFFFF, 1},
+//   {"aerror_en 0am 1fm", 0x30, 9, 1, 1},
+//   {"bypass 1tx 0rx", 0x47, 0, 1, 1},
+//   {"bypass tx gain 1", 0x47, 1, 1, 1},
+//   {"bps afdac 3tx 9rx ", 0x47, 8, 0b1111, 1},
+//   {"bps tx dcc=0 ", 0x7E, 3, 0b111, 1},
+//   {"audio_tx_mute1", 0x50, 15, 1, 1},
+//   {"audio_tx_limit_bypass1", 0x50, 10, 1, 1},
+//   {"audio_tx_limit320", 0x50, 0, 0x3FF, 1},
+//   {"audio_tx_limit reserved7", 0x50, 11, 0b1111, 1},
+//   {"audio_tx_path_sel", 0x2D, 2, 0b11, 1},
+//   {"AFTx Filt Bypass All", 0x47, 0, 1, 1},
+//   {"3kHz AF Resp K Tx", 0x74, 0, 0xFFFF, 100},
+//   {"MIC Sensit Tuning", 0x7D, 0, 0b11111, 1},
+//   {"DCFiltBWTxMICIn15-480hz", 0x7E, 3, 0b111, 1},
+//   {"04 768", 0x04, 0, 0x0300, 1},
+//   {"43 32264", 0x43, 0, 0x7E08, 1},
+//   {"4b 58434", 0x4b, 0, 0xE442, 1},
+//   {"73 22170", 0x73, 0, 0x569A, 1},
+//   {"7E 13342", 0x7E, 0, 0x341E, 1},
+//   {"47 26432 24896", 0x47, 0, 0x6740, 1},
+//   {"03 49662 49137", 0x30, 0, 0xC1FE, 1},
+//   {"Enable Compander", 0x31, 3, 1, 1},
+//   {"Band-Gap Enable", 0x37, 0, 1, 1},
+//   {"IF step100x", 0x3D, 0, 0xFFFF, 100},
+//   {"IF step1x", 0x3D, 0, 0xFFFF, 1},
+//   {"Band Selection Thr", 0x3E, 0, 0xFFFF, 1},
+//   {"RF filt BW ", 0x43, 12, 0b111, 1},
+//   {"RF filt BW weak", 0x43, 9, 0b111, 1},
+//   {"BW Mode Selection", 0x43, 4, 0b11, 1},
+//   {"AF Output Inverse", 0x47, 13, 1, 1},
+//   {"AF ALC Disable", 0x4B, 5, 1, 1},
+//   {"AGC Fix Mode", 0x7E, 15, 1, 1},
+//   {"AGC Fix Index", 0x7E, 12, 0b111, 1},
+//   {"Crystal vReg Bit", 0x1A, 12, 0b1111, 1},
+//   {"Crystal iBit", 0x1A, 8, 0b1111, 1},
+//   {"PLL CP bit", 0x1F, 0, 0b1111, 1},
+//   {"PLL/VCO Enable", 0x30, 4, 0xF, 1},
+//   {"Exp AF Rx Ratio", 0x28, 14, 0b11, 1},
+//   {"Exp AF Rx 0 dB", 0x28, 7, 0x7F, 1},
+//   {"Exp AF Rx noise", 0x28, 0, 0x7F, 1},
+//   {"OFF AFRxHPF300 flt", 0x2B, 10, 1, 1},
+//   {"OFF AF RxLPF3K flt", 0x2B, 9, 1, 1},
+//   {"AF Rx Gain1", 0x48, 10, 0x11, 1},
+//   {"AF Rx Gain2", 0x48, 4, 0b111111, 1},
+//   {"AF DAC G after G1 G2", 0x48, 0, 0b1111, 1},
+//   {"300Hz AF Resp K Rx", 0x54, 0, 0xFFFF, 100},
+//   {"300Hz AF Resp K Rx", 0x55, 0, 0xFFFF, 100},
+//   {"3kHz AF Resp K Rx", 0x75, 0, 0xFFFF, 100},
+//   {"DC Filt BW Rx IF In", 0x7E, 0, 0b111, 1},
+//   {"OFF AFTxHPF300filter", 0x2B, 2, 1, 1},
+//   {"OFF AFTxLPF1filter", 0x2B, 1, 1, 1},
+//   {"OFF AFTxpre-emp flt", 0x2B, 0, 1, 1},
+//   {"PA Gain Enable", 0x30, 3, 1, 1},
+//   {"PA Biasoutput 0~3", 0x36, 8, 0xFF, 1},
+//   {"PA Gain1 Tuning", 0x36, 3, 0b111, 1},
+//   {"PA Gain2 Tuning", 0x36, 0, 0b111, 1},
+//   {"RF TxDeviation ON", 0x40, 12, 1, 1},
+//   {"AFTxLPF2fltBW1.7-4.5khz", 0x43, 6, 0b111, 1},
+//   {"300Hz AF Resp K Tx", 0x44, 0, 0xFFFF, 100},
+//   {"300Hz AF Resp K Tx", 0x45, 0, 0xFFFF, 100},
 };
 
 #define STILL_REGS_MAX_LINES 3
@@ -1622,8 +1616,9 @@ static void OnKeyDown(uint8_t key) {
             gIsKeylocked = false;
             ShowOSDPopup("Unlocked");
             gKeylockCountdown = durations[AUTO_KEYLOCK];
-            // Bip ou retour visuel ici
+            
         }
+        else ShowOSDPopup("Unlock:F");
         return;
     } 
     gKeylockCountdown = durations[AUTO_KEYLOCK];
@@ -1959,7 +1954,23 @@ static void OnKeyDown(uint8_t key) {
                                  (AUTO_KEYLOCK <= 0 ? 3 : AUTO_KEYLOCK - 1);
                       gKeylockCountdown = durations[AUTO_KEYLOCK];
                       break;
+                  case 19: // Gain3D
+                      if (isKey3) {
+                          if (Gain3D_Index < 7) Gain3D_Index++;
+                      } else {
+                          if (Gain3D_Index > 0) Gain3D_Index--;
+                      }
+                      const uint16_t g3d_table[] = {0, 0x2AAB, 0x4924, 0x6800, 0x871C, 0xA666, 0xC5D1, 0xE555};
+                      BK4819_WriteRegister(BK4819_REG_3D, g3d_table[Gain3D_Index]);
+                      break;
                   
+                  case 20: // 2X IF
+                      Enable2XIF = !Enable2XIF;
+                      uint16_t reg43 = BK4819_ReadRegister(BK4819_REG_43);
+                      if (Enable2XIF) reg43 |= (1 << 5);
+                      else reg43 &= ~(1 << 5);
+                      BK4819_WriteRegister(BK4819_REG_43, reg43);
+                      break;
               }
         break;
 
@@ -2843,8 +2854,6 @@ static void Tick() {
       if (!gIsKeylocked) ShowOSDPopup("Locked"); //Iggy replace this ?
       gIsKeylocked = true;
 	  }
-
-  
   }
 
   if (gNextTimeslice_10ms) {
@@ -3377,6 +3386,14 @@ static void GetParametersText(uint16_t index, char *buffer) {
             else  sprintf(buffer, "Key Unlocked");
             break;
 
+        case 19:
+            const uint16_t g3d_values[] = {0, 0x2AAB, 0x4924, 0x6800, 0x871C, 0xA666, 0xC5D1, 0xE555};
+            sprintf(buffer, "REG_3D:%04X", g3d_values[Gain3D_Index]);
+            break;
+        case 20:
+            sprintf(buffer
+                , "2X IF: %s", Enable2XIF ? "ON" : "OFF");
+            break;
         
         default:
             // Gestion d'un index inattendu (optionnel)

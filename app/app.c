@@ -675,7 +675,7 @@ void APP_TimeSlice10ms(void)
 				UI_DisplayAudioBar();
 	}
 
-	static uint8_t DisplayStatusCountdown = 15;
+	static uint8_t DisplayStatusCountdown = 50; //Test Kolyan was 15
 	if (!DisplayStatusCountdown--){
 		UI_DisplayStatus();
 		GUI_DisplayScreen();
