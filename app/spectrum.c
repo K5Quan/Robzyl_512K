@@ -915,6 +915,8 @@ static void ToggleRX(bool on) {
           }
     
     if (on) { 
+        BK4819_WriteRegister(BK4819_REG_37, 0x1D0F);
+        SYSTEM_DelayMs(20);
         RADIO_SetModulation(settings.modulationType);
         BK4819_SetFilterBandwidth(settings.listenBw, false);
         BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_02_CxCSS_TAIL);

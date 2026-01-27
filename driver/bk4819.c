@@ -77,7 +77,7 @@ void BK4819_Init(void)
 	BK4819_WriteRegister(BK4819_REG_00, 0x8000);
 	BK4819_WriteRegister(BK4819_REG_00, 0x0000);
 
-	BK4819_WriteRegister(BK4819_REG_37, 0x1D0F);
+	BK4819_WriteRegister(BK4819_REG_37, 0x1D0F); //0001110100001111
 	BK4819_WriteRegister(BK4819_REG_36, 0x0022);
 
 	//BK4819_SetDefaultAmplifierSettings();
@@ -705,40 +705,18 @@ void BK4819_SetRegValue(RegisterSpec s, uint16_t v) {
   BK4819_WriteRegister(s.num, reg | (v << s.offset));
 }
 
-void BK4819_RX_TurnOn(void)
-{
-	// DSP Voltage Setting = 1
-	// ANA LDO = 2.7v
-	// VCO LDO = 2.7v
-	// RF LDO  = 2.7v
-	// PLL LDO = 2.7v
-	// ANA LDO bypass
-	// VCO LDO bypass
-	// RF LDO  bypass
-	// PLL LDO bypass
-	// Reserved bit is 1 instead of 0
-	// Enable  DSP
-	// Enable  XTAL
-	// Enable  Band Gap
-	//
-	BK4819_WriteRegister(BK4819_REG_37, 0x1F0F);  // 0001111100001111
+void BK4819_RX_TurnOn(void) {
+  BK4819_WriteRegister(BK4819_REG_36, 0x0000);
+  BK4819_WriteRegister(BK4819_REG_37, 0x1D0F);
+  BK4819_WriteRegister(BK4819_REG_30, 0x0200);
 
-	// Turn off everything
-	BK4819_WriteRegister(BK4819_REG_30, 0);
-
-	SYSTEM_DelayMs(20);  // Delay for RX activation ЧИНИМ ПРИЕМ 
-
-	BK4819_WriteRegister(BK4819_REG_30, 
-		BK4819_REG_30_ENABLE_VCO_CALIB |
-		BK4819_REG_30_DISABLE_UNKNOWN |
-		BK4819_REG_30_ENABLE_RX_LINK |
-		BK4819_REG_30_ENABLE_AF_DAC |
-		BK4819_REG_30_ENABLE_DISC_MODE |
-		BK4819_REG_30_ENABLE_PLL_VCO |
-		BK4819_REG_30_DISABLE_PA_GAIN |
-		BK4819_REG_30_DISABLE_MIC_ADC |
-		BK4819_REG_30_DISABLE_TX_DSP |
-		BK4819_REG_30_ENABLE_RX_DSP );
+  BK4819_WriteRegister(
+      BK4819_REG_30,
+      BK4819_REG_30_ENABLE_VCO_CALIB | BK4819_REG_30_DISABLE_UNKNOWN |
+          BK4819_REG_30_ENABLE_RX_LINK | BK4819_REG_30_ENABLE_AF_DAC |
+          BK4819_REG_30_ENABLE_DISC_MODE | BK4819_REG_30_ENABLE_PLL_VCO |
+          BK4819_REG_30_DISABLE_PA_GAIN | BK4819_REG_30_DISABLE_MIC_ADC |
+          BK4819_REG_30_DISABLE_TX_DSP | BK4819_REG_30_ENABLE_RX_DSP);
 }
 
 void BK4819_PickRXFilterPathBasedOnFrequency(uint32_t Frequency)
