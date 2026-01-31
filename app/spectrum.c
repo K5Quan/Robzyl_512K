@@ -102,8 +102,8 @@ static uint32_t spectrumElapsedCount = 0;
 static uint32_t SpectrumPauseCount = 0;
 static bool SPECTRUM_PAUSED;
 static uint8_t IndexMaxLT = 0;
-static const char *labels[] = {"OFF","2s","5s","10s","30s", "1m", "5m", "10m", "20m", "30m"};
-static const uint16_t listenSteps[] = {0, 2, 5, 10, 30, 60, 300, 600, 1200, 1800}; //in s
+static const char *labels[] = {"OFF","3s","6s","10s","20s", "1m", "5m", "10m", "20m", "30m"};
+static const uint16_t listenSteps[] = {0, 3, 6, 10, 20, 60, 300, 600, 1200, 1800}; //in s
 #define LISTEN_STEP_COUNT 9
 
 static uint8_t IndexPS = 0;
@@ -225,29 +225,29 @@ static uint8_t validScanListIndices[MAX_VALID_SCANLISTS]; // stocke les index va
 static void MyDrawVLine(uint8_t x, uint8_t y_start, uint8_t y_end, uint8_t step); //ПРОСТОЙ РЕЖИМ ЛИНИИ
 
 const RegisterSpec allRegisterSpecs[] = {
-    {"10_LNAs",  0x10, 8, 0b11,  1},
-    {"10_LNA",   0x10, 5, 0b111, 1},
-    {"10_PGA",   0x10, 0, 0b111, 1},
-    {"10_MIX",   0x10, 3, 0b11,  1},
-    {"11_LNAs",  0x11, 8, 0b11,  1},
-    {"11_LNA",   0x11, 5, 0b111, 1},
-    {"11_PGA",   0x11, 0, 0b111, 1},
-    {"11_MIX",   0x11, 3, 0b11,  1},
-    {"12_LNAs",  0x12, 8, 0b11,  1},
-    {"12_LNA",   0x12, 5, 0b111, 1},
-    {"12_PGA",   0x12, 0, 0b111, 1},
-    {"12_MIX",   0x12, 3, 0b11,  1},
+ //   {"10_LNAs",  0x10, 8, 0b11,  1},
+ //   {"10_LNA",   0x10, 5, 0b111, 1},
+ //   {"10_PGA",   0x10, 0, 0b111, 1},
+ //   {"10_MIX",   0x10, 3, 0b11,  1},
+ //   {"11_LNAs",  0x11, 8, 0b11,  1},
+ //   {"11_LNA",   0x11, 5, 0b111, 1},
+ //   {"11_PGA",   0x11, 0, 0b111, 1},
+ //   {"11_MIX",   0x11, 3, 0b11,  1},
+ //   {"12_LNAs",  0x12, 8, 0b11,  1},
+ //   {"12_LNA",   0x12, 5, 0b111, 1},
+ //   {"12_PGA",   0x12, 0, 0b111, 1},
+ //   {"12_MIX",   0x12, 3, 0b11,  1},
     {"13_LNAs",  0x13, 8, 0b11,  1},
     {"13_LNA",   0x13, 5, 0b111, 1},
     {"13_PGA",   0x13, 0, 0b111, 1},
     {"13_MIX",   0x13, 3, 0b11,  1},
-    {"14_LNAs",  0x14, 8, 0b11,  1},
-    {"14_LNA",   0x14, 5, 0b111, 1},
-    {"14_PGA",   0x14, 0, 0b111, 1},
-    {"14_MIX",   0x14, 3, 0b11,  1},
+ //   {"14_LNAs",  0x14, 8, 0b11,  1},
+ //   {"14_LNA",   0x14, 5, 0b111, 1},
+ //   {"14_PGA",   0x14, 0, 0b111, 1},
+ //   {"14_MIX",   0x14, 3, 0b11,  1},
     {"XTAL F Mode Select", 0x3C, 6, 0b11, 1},
-    {"OFF AF Rx de-emp", 0x2B, 8, 1, 1},
-    {"Gain after FM Demod", 0x43, 2, 1, 1},
+//    {"OFF AF Rx de-emp", 0x2B, 8, 1, 1},
+//    {"Gain after FM Demod", 0x43, 2, 1, 1},
     {"RF Tx Deviation", 0x40, 0, 0xFFF, 10},
     {"Compress AF Tx Ratio", 0x29, 14, 0b11, 1},
     {"Compress AF Tx 0 dB", 0x29, 7, 0x7F, 1},
@@ -256,9 +256,9 @@ const RegisterSpec allRegisterSpecs[] = {
     {"AFC Range Select", 0x73, 11, 0b111, 1},
     {"AFC Disable", 0x73, 4, 1, 1},
     {"AFC Speed", 0x73, 5, 0b111111, 1},
-    {"IF step100x", 0x3D, 0, 0xFFFF, 100},
-    {"IF step1x", 0x3D, 0, 0xFFFF, 1},
-    {"RFfiltBW1.7-4.5khz ", 0x43, 12, 0b111, 1},
+//   {"IF step100x", 0x3D, 0, 0xFFFF, 100},
+//   {"IF step1x", 0x3D, 0, 0xFFFF, 1},
+//   {"RFfiltBW1.7-4.5khz ", 0x43, 12, 0b111, 1},
 //   {"RFfiltBWweak1.7-4.5khz", 0x43, 9, 0b111, 1},
 //   {"BW Mode Selection", 0x43, 4, 0b11, 1},
 //   {"XTAL F Low-16bits", 0x3B, 0, 0xFFFF, 1},
@@ -304,11 +304,11 @@ const RegisterSpec allRegisterSpecs[] = {
 //   {"bps tx dcc=0 ", 0x7E, 3, 0b111, 1},
 //   {"audio_tx_mute1", 0x50, 15, 1, 1},
 //   {"audio_tx_limit_bypass1", 0x50, 10, 1, 1},
-//   {"audio_tx_limit320", 0x50, 0, 0x3FF, 1},
+//  {"audio_tx_limit320", 0x50, 0, 0x3FF, 1},
 //   {"audio_tx_limit reserved7", 0x50, 11, 0b1111, 1},
 //   {"audio_tx_path_sel", 0x2D, 2, 0b11, 1},
 //   {"AFTx Filt Bypass All", 0x47, 0, 1, 1},
-//   {"3kHz AF Resp K Tx", 0x74, 0, 0xFFFF, 100},
+   {"3kHz AF Resp K Tx", 0x74, 0, 0xFFFF, 100},
 //   {"MIC Sensit Tuning", 0x7D, 0, 0b11111, 1},
 //   {"DCFiltBWTxMICIn15-480hz", 0x7E, 3, 0b111, 1},
 //   {"04 768", 0x04, 0, 0x0300, 1},
@@ -342,9 +342,8 @@ const RegisterSpec allRegisterSpecs[] = {
 //   {"AF Rx Gain1", 0x48, 10, 0x11, 1},
 //   {"AF Rx Gain2", 0x48, 4, 0b111111, 1},
 //   {"AF DAC G after G1 G2", 0x48, 0, 0b1111, 1},
-//   {"300Hz AF Resp K Rx", 0x54, 0, 0xFFFF, 100},
-//   {"300Hz AF Resp K Rx", 0x55, 0, 0xFFFF, 100},
-//   {"3kHz AF Resp K Rx", 0x75, 0, 0xFFFF, 100},
+     {"300Hz AF Resp K Tx", 0x44, 0, 0xFFFF, 100},
+     {"300Hz AF Resp K Tx", 0x45, 0, 0xFFFF, 100},
 //   {"DC Filt BW Rx IF In", 0x7E, 0, 0b111, 1},
 //   {"OFF AFTxHPF300filter", 0x2B, 2, 1, 1},
 //   {"OFF AFTxLPF1filter", 0x2B, 1, 1, 1},
@@ -354,9 +353,10 @@ const RegisterSpec allRegisterSpecs[] = {
 //   {"PA Gain1 Tuning", 0x36, 3, 0b111, 1},
 //   {"PA Gain2 Tuning", 0x36, 0, 0b111, 1},
 //   {"RF TxDeviation ON", 0x40, 12, 1, 1},
-//   {"AFTxLPF2fltBW1.7-4.5khz", 0x43, 6, 0b111, 1},
-//   {"300Hz AF Resp K Tx", 0x44, 0, 0xFFFF, 100},
-//   {"300Hz AF Resp K Tx", 0x45, 0, 0xFFFF, 100},
+//   {"AFTxLPF2fltBW1.7-4.5khz", 0x43, 6, 0b111, 1}, 
+     {"300Hz AF Resp K Rx", 0x54, 0, 0xFFFF, 100},
+     {"300Hz AF Resp K Rx", 0x55, 0, 0xFFFF, 100},
+     {"3kHz AF Resp K Rx", 0x75, 0, 0xFFFF, 100},
 };
 
 #define STILL_REGS_MAX_LINES 3
