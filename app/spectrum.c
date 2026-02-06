@@ -89,10 +89,9 @@ static uint8_t Noislvl_ON = 50;
 static uint16_t osdPopupSetting = 500;       // case 16
 static uint16_t UOO_trigger = 15;            // case 17
 static uint8_t AUTO_KEYLOCK = AUTOLOCK_OFF;  // case 18
-static uint8_t Gain3D_Index = 1;             // case 19 
-static bool    Enable2XIF = 0;               // case 20 
-static bool    SoundBoost = 0;               // case 21 
-#define PARAMETER_COUNT 22
+static uint8_t GlitchMax = 1;                // case 19 
+static bool    SoundBoost = 0;               // case 20 
+#define PARAMETER_COUNT 21
 ////////////////////////////////////////////////////////////////////
 
 uint8_t  gKeylockCountdown = 0;
@@ -858,49 +857,6 @@ static void ToggleRX(bool on) {
     if(!on && SpectrumMonitor == 2) {isListening = 1;return;}
     isListening = on;
 
-// ────────────────────────────────────────────────
-    // SATCOM BOOST — вставляем здесь, в начале ToggleRX
-    // ────────────────────────────────────────────────
-    uint32_t Frequency = gCurrentVfo->pRX->Frequency;
-
-    if (gEeprom.SATCOM_ENABLE && Frequency >= 24000000 && Frequency <= 28000000)
-    {
-        // 2 моргания — для визуального подтверждения в спектре
-        for (int i = 0; i < 2; i++) {
-            GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
-            SYSTEM_DelayMs(30);
-            GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
-            if (i == 0) SYSTEM_DelayMs(50);
-        }
-
-        // 1. Принудительный Band 3 (UHF high)
-        uint16_t reg44 = BK4819_ReadRegister(0x44);
-        reg44 = (reg44 & ~(7u << 13)) | (2u << 13);
-        BK4819_WriteRegister(0x44, reg44);
-
-        // 2. LNA Gain = Max (0xF)
-        uint16_t reg13 = BK4819_ReadRegister(0x13);
-        reg13 = (reg13 & ~(0xFu << 8)) | (0xFu << 8);
-        BK4819_WriteRegister(0x13, reg13);
-		
-
-        // 3. Mixer Gain = Max (3)
-        uint16_t reg10 = BK4819_ReadRegister(0x10);
-        reg10 = (reg10 & ~(3u << 3)) | (3u << 3);
-        BK4819_WriteRegister(0x10, reg10);
-
-        // 4. IF Gain Max + аттенюатор OFF
-        uint16_t reg12 = BK4819_ReadRegister(0x12);
-        reg12 &= ~(1u << 6);          // аттенюатор выкл
-        reg12 = (reg12 & 0xFFF0) | 0x000F;  // IF gain = 15
-        BK4819_WriteRegister(0x12, reg12);
-
-        // Дополнительно: отключить AGC (чтобы не сбросил gain)
-        BK4819_WriteRegister(0x13, reg13 & ~(1u << 15));  // AGC OFF (бит 15)
-
-    }
-
-
     if (on && isKnownChannel) {
         if(!gForceModulation) settings.modulationType = channelModulation;
         BK4819_InitAGCSpectrum(settings.modulationType);
@@ -928,23 +884,6 @@ static void ToggleRX(bool on) {
         ToggleAFBit(on);
     }
     
-    // Если выключаем RX — возвращаем дефолт (на всякий случай)
-    if (!on && gEeprom.SATCOM_ENABLE)
-    {
-        // Возврат к нормальному режиму (перезаписываем)
-        uint16_t reg13 = BK4819_ReadRegister(0x13);
-        reg13 = (reg13 & ~(0xFu << 8)) | (0x08u << 8);   // LNA средний
-        reg13 |= (1u << 15);                              // AGC ON
-        BK4819_WriteRegister(0x13, reg13);
-
-        uint16_t reg10 = BK4819_ReadRegister(0x10);
-        reg10 = (reg10 & ~(3u << 3)) | (0x02u << 3);     // Mixer дефолт
-        BK4819_WriteRegister(0x10, reg10);
-
-        uint16_t reg12 = BK4819_ReadRegister(0x12);
-        reg12 &= ~(1u << 6);                              // аттенюатор авто
-        BK4819_WriteRegister(0x12, reg12);
-    }
 }
 
 
@@ -1022,6 +961,11 @@ static void UpdateScanInfo() {
     scanInfo.rssiMin = scanInfo.rssi;
   }
 }
+static void UpdateGlitch() {
+    uint8_t glitch = BK4819_GetGlitchIndicator();
+    if (glitch > 10) {gIsPeak = false;} 
+    else {gIsPeak = true;}// if glitch is too high, receiving stopped
+}
 
 //static uint8_t my_abs(signed v) { return v > 0 ? v : -v; }
 
@@ -1047,12 +991,16 @@ static void Measure() {
 
     if (!gIsPeak && rssi > previousRssi + settings.rssiTriggerLevelUp) {
         SYSTEM_DelayMs(10);
+        
         uint16_t rssi2 = scanInfo.rssi = GetRssi();
         if (rssi2 > rssi+10) {
           peak.f = scanInfo.f;
           peak.i = scanInfo.i;
         }
         if (settings.rssiTriggerLevelUp < 50) {gIsPeak = true;}
+        UpdateNoiseOff();
+        UpdateGlitch();
+
     } 
     if (!gIsPeak || !isListening)
         previousRssi = rssi;
@@ -2066,22 +2014,12 @@ static void OnKeyDown(uint8_t key) {
                                  (AUTO_KEYLOCK <= 0 ? 3 : AUTO_KEYLOCK - 1);
                       gKeylockCountdown = durations[AUTO_KEYLOCK];
                       break;
-                  case 19: // Gain3D
+                  case 19:
                       if (isKey3) {
-                          if (Gain3D_Index < 7) Gain3D_Index++;
+                          if (GlitchMax < 30) GlitchMax++;
                       } else {
-                          if (Gain3D_Index > 0) Gain3D_Index--;
+                          if (GlitchMax > 0) GlitchMax--;
                       }
-                      const uint16_t g3d_table[] = {0, 0x2AAB, 0x4924, 0x6800, 0x871C, 0xA666, 0xC5D1, 0xE555};
-                      BK4819_WriteRegister(BK4819_REG_3D, g3d_table[Gain3D_Index]);
-                      break;
-                  
-                  case 20: // 2X IF
-                      Enable2XIF = !Enable2XIF;
-                      uint16_t reg43 = BK4819_ReadRegister(BK4819_REG_43);
-                      if (Enable2XIF) reg43 |= (1 << 5);
-                      else reg43 &= ~(1 << 5);
-                      BK4819_WriteRegister(BK4819_REG_43, reg43);
                       break;
                   case 21: // AF 300 SoundBoost
                       SoundBoost = !SoundBoost;
@@ -2307,13 +2245,15 @@ static void OnKeyDown(uint8_t key) {
         Spectrum_state++;
         
         // Цикл по 4 режимам (0 → 1 → 2 → 3 → 0)
-        if (Spectrum_state > 3) {
-            Spectrum_state = 0;
-        }
+        if (Spectrum_state > 3) {Spectrum_state = 0;}
+        char sText[32];
+        const char* s[] = {"FREQ", "S LIST", "BAND", "RANGE"};
+        sprintf(sText, "MODE: %s", s[Spectrum_state]);
+        ShowOSDPopup(sText);
 
         gRequestedSpectrumState = Spectrum_state;
         gSpectrumChangeRequested = true;
-
+     
         // Полный сброс состояния спектра при смене режима
         isInitialized = false;
         spectrumElapsedCount = 0;
@@ -2983,10 +2923,11 @@ static void UpdateListening(void) { // called every 10ms
         stableCount = 0;
     }
     
-    if (isListening || SpectrumMonitor || WaitSpectrum) {UpdateNoiseOff();}
-    UpdateNoiseOn();
+    UpdateNoiseOff();
+    UpdateGlitch();
+    if (!isListening) {UpdateNoiseOn();}
         
-    spectrumElapsedCount+=10; //in ms
+    spectrumElapsedCount+=300; //in ms
     uint32_t maxCount = (uint32_t)MaxListenTime * 1000;
 
     if (MaxListenTime && spectrumElapsedCount >= maxCount) {
@@ -3030,7 +2971,7 @@ static void Tick() {
   if (gNextTimeslice_10ms) {
     HandleUserInput();
     gNextTimeslice_10ms = 0;
-    if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); 
+    //if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); 
     if(SpectrumPauseCount) SpectrumPauseCount--;
     if (osdPopupTimer > 0) {
         UI_DisplayPopup(osdPopupText);  // Wyświetl aktualny tekst
@@ -3065,6 +3006,7 @@ static void Tick() {
   if (!isListening) {UpdateScan();}
   
   if (gNextTimeslice_display) {
+    if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); // Kolyan test
     gNextTimeslice_display = 0;
     latestScanListName[0] = '\0';
     RenderStatus();
@@ -3512,7 +3454,7 @@ static void GetParametersText(uint16_t index, char *buffer) {
             break;
         
         case 9:
-            sprintf(buffer, "Reset Dafault: 3");
+            sprintf(buffer, "Reset Default: 3");
             break;
         case 10:
             if (Backlight_On_Rx)
@@ -3564,14 +3506,9 @@ static void GetParametersText(uint16_t index, char *buffer) {
             break;
 
         case 19:
-            const uint16_t g3d_values[] = {0, 0x2AAB, 0x4924, 0x6800, 0x871C, 0xA666, 0xC5D1, 0xE555};
-            sprintf(buffer, "REG_3D:%04X", g3d_values[Gain3D_Index]);
+           sprintf(buffer, "GlitchMax:%d", GlitchMax);
             break;
         case 20:
-            sprintf(buffer
-                , "2X IF: %s", Enable2XIF ? "ON" : "OFF");
-            break;
-        case 21:
             sprintf(buffer, "SoundBoost: %s", SoundBoost ? "ON" : "OFF");
             break;
         

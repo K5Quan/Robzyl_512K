@@ -164,8 +164,6 @@ typedef struct {
 	uint32_t              RX_OFFSET;
 	uint16_t              SQL_TONE;
 	bool FlashlightOnRX;//фонарь
-	    bool SATCOM_ENABLE;  // SATCOM: +9 dB LNA gain для 240-280 MHz
-	//	bool AUDIO_BOOST_ENABLE; // звук усиление
 } EEPROM_Config_t;
 
 extern EEPROM_Config_t gEeprom;
