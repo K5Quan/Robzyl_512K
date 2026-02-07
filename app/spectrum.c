@@ -2256,8 +2256,8 @@ static void OnKeyDown(uint8_t key) {
         // Цикл по 4 режимам (0 → 1 → 2 → 3 → 0)
         if (Spectrum_state > 3) {Spectrum_state = 0;}
         char sText[32];
-        const char* s[] = {"FREQ", "SC-LIST", "BANDS", "RANGE"};
-        sprintf(sText, "MODE: %s", s[Spectrum_state]);
+        const char* s[] = {"FREQ", "SLIST", "BANDS", "RANGE"};
+        sprintf(sText, "MOD: %s", s[Spectrum_state]);
         ShowOSDPopup(sText);
 
         gRequestedSpectrumState = Spectrum_state;
