@@ -963,7 +963,7 @@ static void UpdateScanInfo() {
 }
 static void UpdateGlitch() {
     uint8_t glitch = BK4819_GetGlitchIndicator();
-    if (glitch > 10) {gIsPeak = false;} 
+    if (glitch > GlitchMax) {gIsPeak = false;} 
     else {gIsPeak = true;}// if glitch is too high, receiving stopped
 }
 
@@ -2021,7 +2021,7 @@ static void OnKeyDown(uint8_t key) {
                           if (GlitchMax > 0) GlitchMax--;
                       }
                       break;
-                  case 21: // AF 300 SoundBoost
+                  case 20: // AF 300 SoundBoost
                       SoundBoost = !SoundBoost;
                       if(SoundBoost){
                             BK4819_WriteRegister(0x54, 0x8546);   	//default is 0x9009
@@ -2911,7 +2911,7 @@ static void UpdateListening(void) { // called every 10ms
 
     // Détection de fréquence stable
     if (peak.f == stableFreq) {
-        if (++stableCount >= 50) {  // ~500ms
+        if (++stableCount >= 2) {  // ~600ms
             if (!SpectrumMonitor) FillfreqHistory();
             stableCount = 0;
             if (gEeprom.BACKLIGHT_MAX > 5)
@@ -2924,7 +2924,7 @@ static void UpdateListening(void) { // called every 10ms
     }
     
     UpdateNoiseOff();
-    UpdateGlitch();
+    //UpdateGlitch();
     if (!isListening) {UpdateNoiseOn();}
         
     spectrumElapsedCount+=300; //in ms

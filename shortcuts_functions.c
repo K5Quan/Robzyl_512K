@@ -3,3 +3,5 @@ RADIO_ConfigureChannel();
 UI_DisplayStatus();
 Measure(); 
 UpdateNoiseOff();
+UpdateGlitch();
+UpdateListening();
