@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "bsp/dp32g030/spi.h"
 
 typedef struct {
 	uint8_t MSTR;
@@ -38,7 +39,7 @@ typedef struct {
 	uint8_t RXFIFO_OVF;
 } SPI_Config_t;
 
-void SPI0_Init(void);
+void SPI0_Init(uint8_t SPR);
 void SPI_WaitForUndocumentedTxFifoStatusBit(void);
 
 void SPI_Disable(volatile uint32_t *pCR);

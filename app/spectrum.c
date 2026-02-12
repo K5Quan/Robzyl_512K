@@ -5,6 +5,7 @@
 
 #include "ui/helper.h"
 #include "common.h"
+#include "driver/spi.h"
 #include "action.h"
 #include "bands.h"
 #include "ui/main.h"
@@ -121,7 +122,6 @@ static uint8_t SpectrumMonitor = 0;
 static uint8_t prevSpectrumMonitor = 0;
 static bool Key_1_pressed = 0;
 static uint16_t WaitSpectrum = 0; 
-static uint32_t Last_Tuned_Freq = 44610000;
 #define SQUELCH_OFF_DELAY 10;
 static bool StorePtt_Toggle_Mode = 0;
 static uint8_t ArrowLine = 1;
@@ -869,6 +869,7 @@ static void ToggleRX(bool on) {
           }
     
     if (on) { 
+        SPI0_Init(64);
         BK4819_WriteRegister(BK4819_REG_37, 0x1D0F);
         SYSTEM_DelayMs(20);
         RADIO_SetModulation(settings.modulationType);
@@ -876,6 +877,7 @@ static void ToggleRX(bool on) {
         BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_02_CxCSS_TAIL);
 
     } else { 
+        SPI0_Init(2);
         BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, false); //Scan in 25K bandwidth
         if(appMode!=CHANNEL_MODE) BK4819_WriteRegister(0x43, GetBWRegValueForScan());
         BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, 0);
@@ -2029,16 +2031,6 @@ static void OnKeyDown(uint8_t key) {
                       break;
                   case 20: // AF 300 SoundBoost
                       SoundBoost = !SoundBoost;
-                      if(SoundBoost){
-                            BK4819_WriteRegister(0x54, 0x90D1);     //default is 0x9009
-                            BK4819_WriteRegister(0x55, 0x3271);    //default is 0x31a9
-                            BK4819_WriteRegister(0x75, 0xFC13);    //default is 0xF50B, clear is 0xFC13
-                      }
-                      else {
-                           BK4819_WriteRegister(0x54, 0x9009);
-                           BK4819_WriteRegister(0x55, 0x31a9);
-                           BK4819_WriteRegister(0x75, 0xF50B);
-                      }
                       break;
               }
         break;
@@ -2319,7 +2311,7 @@ static void OnKeyDown(uint8_t key) {
       for (uint16_t k = 1; k < HISTORY_SIZE; k++) {
           if (HFreqs[k]) {validCount++;}
       }
-      if (historyListActive == true) {Last_Tuned_Freq = HFreqs[historyListIndex];}
+      if (historyListActive == true) {scanInfo.f = HFreqs[historyListIndex];}
       SetState(STILL);      
   break;
 
@@ -2899,11 +2891,26 @@ static void UpdateScan() {
 static void UpdateListening(void) { // called every 10ms
     static uint32_t stableFreq = 1;
     static uint16_t stableCount = 0;
+    static bool SoundBoostsave = false; // Initialisation
+    
     uint16_t rssi = GetRssi();
     scanInfo.rssi = rssi;
     uint16_t count = GetStepsCount() + 1;
     uint16_t i = peak.i;
-
+    
+    if (SoundBoost != SoundBoostsave) {
+        if (SoundBoost) {
+            BK4819_WriteRegister(0x54, 0x90D1);    // default is 0x9009
+            BK4819_WriteRegister(0x55, 0x3271);    // default is 0x31a9
+            BK4819_WriteRegister(0x75, 0xFC13);    // default is 0xF50B
+        } 
+        else {
+            BK4819_WriteRegister(0x54, 0x9009);
+            BK4819_WriteRegister(0x55, 0x31a9);
+            BK4819_WriteRegister(0x75, 0xF50B);
+        }
+        SoundBoostsave = SoundBoost;
+    }
     // --- Mise à jour du buffer RSSI ---
     if (count > 128) {
         uint16_t pixel = (uint32_t)i * 128 / count;
@@ -3179,7 +3186,7 @@ typedef struct {
     uint16_t osdPopupSetting;
     uint8_t GlitchMax;  
     bool Backlight_On_Rx;
-    bool    SoundBoost;  
+    bool SoundBoost;  
 } SettingsEEPROM;
 
 
@@ -3270,6 +3277,7 @@ static void SaveSettings()
   eepromData.Noislvl_OFF = Noislvl_OFF;
   eepromData.UOO_trigger = UOO_trigger;
   eepromData.osdPopupSetting = osdPopupSetting;
+  eepromData.GlitchMax = 10;
   if (GlitchMax < 30) eepromData.GlitchMax  = GlitchMax;    
   eepromData.SoundBoost = SoundBoost;
   

@@ -23,12 +23,10 @@
 #include "bsp/dp32g030/irq.h"
 #include "driver/spi.h"
 
-void SPI0_Init(void)
+void SPI0_Init(uint8_t SPR)
 {
 	SPI_Config_t Config;
-
 	SPI_Disable(&SPI0->CR);
-
 	Config.TXFIFO_EMPTY = 0;
 	Config.RXFIFO_HFULL = 0;
 	Config.RXFIFO_FULL = 0;
@@ -36,7 +34,7 @@ void SPI0_Init(void)
 	Config.MSTR = 1;
 	//SPR = 2 correspond au diviseur 16 ($48\text{ MHz} / 16 = 3\text{ MHz}$).
 	//SPR = 4 correspond au diviseur 32 ($48\text{ MHz} / 32 = 1.5\text{ MHz}$).
-	Config.SPR = 4; //Test Kolyan was 2
+	Config.SPR = SPR; //Test Kolyan was 2
 	Config.CPHA = 1;
 	Config.CPOL = 1;
 	Config.LSB = 0;

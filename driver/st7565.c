@@ -205,7 +205,7 @@ uint8_t cmds[] = {
 void ST7565_Init(const bool full)
 {
 	if (full) {
-		SPI0_Init();
+		SPI0_Init(2);
 		ST7565_HardwareReset();
 		SPI_ToggleMasterMode(&SPI0->CR, false);
 		ST7565_WriteByte(ST7565_CMD_SOFTWARE_RESET);   // software reset
