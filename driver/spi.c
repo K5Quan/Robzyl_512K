@@ -42,7 +42,6 @@ void SPI0_Init(uint8_t SPR)
 	Config.RF_CLR = 0;
 	Config.TXFIFO_HFULL = 0;
 	SPI_Configure(SPI0, &Config);
-
 	SPI_Enable(&SPI0->CR);
 }
 
