@@ -783,9 +783,9 @@ if (historyListActive == true){
     isInitialized = false;
 }
 
-static uint8_t GetBWRegValueForScan() {
+/* static uint8_t GetBWRegValueForScan() {
   return scanStepBWRegValues[settings.scanStepIndex];
-}
+} */
 
 static uint16_t GetRssi(void) {
     uint16_t rssi;
