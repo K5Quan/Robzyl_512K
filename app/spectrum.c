@@ -938,6 +938,7 @@ static void ResetModifiers() {
   for (int i = 0; i < 128; ++i) {
     if (rssiHistory[i] == RSSI_MAX_VALUE) rssiHistory[i] = 0;
   }
+  if(appMode==CHANNEL_MODE){LoadValidMemoryChannels();}
   RelaunchScan();
 }
 
@@ -2401,6 +2402,7 @@ static void OnKeyDownStill(KEY_Code_t key) {
              scanInfo.f = peak.f;
              SetF(peak.f);
           }
+          break;
       case KEY_DOWN:
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, false);
@@ -3061,7 +3063,6 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
         if (!Key_1_pressed) LoadSettings(0);
         appMode = mode;
         ResetModifiers();
-        if (appMode==CHANNEL_MODE) LoadValidMemoryChannels();
         if (appMode==FREQUENCY_MODE && !Key_1_pressed) {
             currentFreq = gTxVfo->pRX->Frequency;
             gScanRangeStart = currentFreq - (GetBW() >> 1);
