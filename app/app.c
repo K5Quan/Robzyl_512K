@@ -687,11 +687,11 @@ void APP_TimeSlice10ms(void)
 				UI_DisplayAudioBar();
 	}
 
-	static uint8_t DisplayStatusCountdown = 15; // новое тест
+	static uint8_t DisplayStatusCountdown = 20;
 	if (!DisplayStatusCountdown--){
 		UI_DisplayStatus();
 		GUI_DisplayScreen();
-		DisplayStatusCountdown = 15;
+		DisplayStatusCountdown = 20;
 		ST7565_BlitFullScreen();
 	}
 

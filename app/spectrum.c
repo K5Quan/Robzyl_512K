@@ -1828,8 +1828,7 @@ static void OnKeyDown(uint8_t key) {
                 break;	
 #endif
             case KEY_4: // Scan list selection
-                //ToggleScanList(scanListSelectedIndex, 0);
-				        ToggleScanList(validScanListIndices[scanListSelectedIndex], 0);
+                ToggleScanList(validScanListIndices[scanListSelectedIndex], 0);
                 if (scanListSelectedIndex < validScanListCount - 1) {
                       scanListSelectedIndex++;
                    }
@@ -2395,11 +2394,22 @@ static void OnKeyDownStill(KEY_Code_t key) {
       case KEY_UP:
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, true);
+          } else if (SpectrumMonitor > 0) {
+             uint32_t step = GetScanStep() ;/// 10;
+             if (step < 1) step = 1;
+             peak.f += step;
+             scanInfo.f = peak.f;
+             SetF(peak.f);
           }
-        break;
       case KEY_DOWN:
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, false);
+          } else if (SpectrumMonitor > 0) {
+             uint32_t step = GetScanStep();// / 10;
+             if (step < 1) step = 1;
+             if (peak.f > step) peak.f -= step;
+             scanInfo.f = peak.f;
+             SetF(peak.f);
           }
           break;
       case KEY_2: // przewijanie w górę po liście rejestrów
