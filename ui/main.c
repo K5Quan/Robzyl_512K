@@ -406,7 +406,7 @@ void UI_DisplayMain(void)
 			uint8_t mod_x = mod_x_base - (strlen(s) * 7 / 2) + comp;
 
 			// Выводим тем же шрифтом, что и T (PTT) — UI_PrintStringSmall
-			UI_PrintStringBSmall(s, mod_x, 0, mod_y, 0);
+			UI_PrintStringSmall(s, mod_x, 0, mod_y, 0);
 		}
 
 
@@ -417,7 +417,7 @@ void UI_DisplayMain(void)
 		uint8_t x = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? x_mr : x_vfo;
 		uint8_t y = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? y_mr : y_vfo;
 		if (x != 255 && y != 255)
-			UI_PrintStringBSmall("S", LCD_WIDTH + x, 0, y, 0);
+			UI_PrintStringSmall("S", LCD_WIDTH + x, 0, y, 0);
 	}
 
 		
@@ -435,7 +435,7 @@ void UI_DisplayMain(void)
     uint8_t y = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? y_mr : y_vfo;
 
     if (x != 255 && y != 255)
-        UI_PrintStringBSmall((char[]){p, 0}, LCD_WIDTH + x, 0, y, 0);
+        UI_PrintStringSmall((char[]){p, 0}, LCD_WIDTH + x, 0, y, 0);
 }
 
 
@@ -453,7 +453,7 @@ void UI_DisplayMain(void)
 		uint8_t x = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? x_mr : x_vfo;
 		uint8_t y = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? y_mr : y_vfo;
 		if (x != 255 && y != 255 && dir[0] != 0)
-			UI_PrintStringBSmall(dir, LCD_WIDTH + x, 0, y, 0);
+			UI_PrintStringSmall(dir, LCD_WIDTH + x, 0, y, 0);
 			// ← МЕНЯЙ x_mr/x_vfo и y_mr/y_vfo
 	}
 
@@ -517,7 +517,7 @@ void UI_DisplayMain(void)
 
 		// Рисуем шаг
 		if (y != 255) {
-			UI_PrintStringBSmall(stepStr, LCD_WIDTH + base_x - (strlen(stepStr) * 3), 0, y, 0);
+			UI_PrintStringSmall(stepStr, LCD_WIDTH + base_x - (strlen(stepStr) * 3), 0, y, 0);
 		}
 		// ← Чтобы скрыть шаг в MR: base_x_mr = 255
 		// ← Чтобы скрыть шаг в VFO: base_x_vfo = 255
@@ -531,7 +531,7 @@ void UI_DisplayMain(void)
 		uint8_t x = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? x_mr : x_vfo;
 		uint8_t y = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? y_mr : y_vfo;
 		if (x != 255 && y != 255)
-			UI_PrintStringBSmall(sqlStr, LCD_WIDTH + x, 0, y, 0); // ← МЕНЯЙ x_mr/x_vfo и y_mr/y_vfo
+			UI_PrintStringSmall(sqlStr, LCD_WIDTH + x, 0, y, 0); // ← МЕНЯЙ x_mr/x_vfo и y_mr/y_vfo
 	}
 
 // ───────────────────── ПОЛОСА — полностью разделена по MR/VFO, как шумодав ─────────────────────
@@ -555,7 +555,7 @@ const char *bw = bwStr;
     if (y != 255)
     {
         // Центрирование по X (как раньше, но теперь с отдельным x)
-        UI_PrintStringBSmall(bw, LCD_WIDTH + x - (strlen(bw) * 3), 0, y, 0);
+        UI_PrintStringSmall(bw, LCD_WIDTH + x - (strlen(bw) * 3), 0, y, 0);
     }
 
     // ← МЕНЯЙ x_mr/x_vfo и y_mr/y_vfo отдельно для каждого режима
@@ -732,7 +732,7 @@ static const vertical_dashed_t mr_vlines[] = {
 		GUI_DisplaySmallestDark("POW",  88, 40, false, false);
 		GUI_DisplaySmallestDark("MOD",  110, 40, false, false);
 
-		UI_PrintStringBSmall("TEST", 10, 30, 2, 0);  // обычный вызов
+		UI_PrintStringSmall("TEST", 10, 30, 2, 0);  // обычный вызов
 		
 	
 	}

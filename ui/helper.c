@@ -141,7 +141,7 @@ void UI_PrintStringSmall(const char *pString, uint8_t Start, uint8_t End, uint8_
     }
 }
 
-void UI_PrintStringBSmall(const char *pString, uint8_t Start, uint8_t End, uint8_t Line, uint8_t background)
+/* void UI_PrintStringSmall(const char *pString, uint8_t Start, uint8_t End, uint8_t Line, uint8_t background)
 {
     const size_t Length = strlen(pString);
 
@@ -194,7 +194,7 @@ void UI_PrintStringBSmall(const char *pString, uint8_t Start, uint8_t End, uint8
             cursor += space_width;
         }
     }
-}
+} */
 
 
 void UI_PrintStringSmallBuffer(const char *pString, uint8_t *buffer)

@@ -45,6 +45,32 @@ void UI_DisplayStatus()
 
 	memset(gStatusLine, 0, sizeof(gStatusLine));
 
+	// === Battery voltage / percentage ===
+	
+	char s[8];
+	unsigned int space_needed;
+	unsigned int x2 = LCD_WIDTH - 3;
+	switch (gSetting_battery_text)
+	{
+		case 1: // voltage
+		{
+			const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999;
+			sprintf(s, "%u.%02uV", voltage / 100, voltage % 100);
+			space_needed = 7 * strlen(s);
+			if (x2 >= space_needed)
+				UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
+			break;
+		}
+		case 2: // percentage
+		{
+			sprintf(s, "%u%%", BATTERY_VoltsToPercent(gBatteryVoltageAverage));
+			space_needed = 7 * strlen(s);
+			if (x2 >= space_needed)
+				UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
+			break;
+		}
+	}
+
 	// === ОТДЕЛЬНЫЕ ПОЗИЦИИ ДЛЯ КАЖДОГО ИНДИКАТОРА ===
 	const uint8_t POS_TX   = 0;    // начало "TX" при передаче
 	const uint8_t POS_RX   = 0;    // начало "RX" при приёме
@@ -182,53 +208,6 @@ gStatusLine[POS_B + 14] |= 0x0C;
             UI_PrintStringSmallBuffer(meterStr, gStatusLine + start_x);
         }
     }
-	// === Battery voltage / percentage ===
-	{
-		char s[8];
-		unsigned int space_needed;
-		unsigned int x2 = LCD_WIDTH - 3;
-
-		switch (gSetting_battery_text)
-		{
-			case 1: // voltage
-			{
-				const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999;
-				sprintf(s, "%u.%02uV", voltage / 100, voltage % 100);
-				space_needed = 7 * strlen(s);
-				if (x2 >= space_needed)
-					UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
-				break;
-			}
-			case 2: // percentage
-			{
-				sprintf(s, "%u%%", BATTERY_VoltsToPercent(gBatteryVoltageAverage));
-				space_needed = 7 * strlen(s);
-				if (x2 >= space_needed)
-					UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
-				break;
-			}
-		}
-	}
-
-	/*/ === Вертикальные линии ===
-	uint8_t line_x[] = {0, 127};
-	uint8_t num_lines = sizeof(line_x) / sizeof(line_x[0]);
-	uint8_t dash_step = 2;
-
-	for (uint8_t i = 0; i < num_lines; i++) {
-		uint8_t px = line_x[i];
-		if (dash_step == 1) {
-			gStatusLine[px] = 0xFF;
-		} else {
-			uint8_t pattern = 0;
-			for (uint8_t bit = 0; bit < 8; bit += dash_step) {
-				pattern |= (1 << bit);
-			}
-			gStatusLine[px] |= pattern;
-		}
-	}*/
-
-	
 
 	ST7565_BlitStatusLine();
 }

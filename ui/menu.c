@@ -311,7 +311,7 @@ void UI_DisplayMenu(void)
 
 			// draw the menu index number/count НОМЕРА ПУНКТОВ
 			sprintf(String, "%2u.%u", 1 + gMenuCursor, gMenuListCount);
-			UI_PrintStringBSmall(String, 2, 0, 6,0);
+			UI_PrintStringSmall(String, 2, 0, 6,0);
 		}
 
 
