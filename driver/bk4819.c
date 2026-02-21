@@ -221,21 +221,6 @@ void BK4819_SetAGC(bool enable)
 		| (!enable << 15)   // 0  AGC fix mode
 		| (0b100 << 12)       // 3  AGC fix index -> changed to min as experiment
 	);
-
-	// if(enable) {
-	// 	BK4819_WriteRegister(BK4819_REG_7B, 0x8420);
-	// }
-	// else {
-	// 	BK4819_WriteRegister(BK4819_REG_7B, 0x318C);
-	
-	// 	BK4819_WriteRegister(BK4819_REG_7C, 0x595E);
-	// 	BK4819_WriteRegister(BK4819_REG_20, 0x8DEF);
-
-	// 	for (uint8_t i = 0; i < 8; i++) {
-	// 		//BK4819_WriteRegister(BK4819_REG_06, ((i << 13) | 0x2500u) + 0x036u);
-	// 		BK4819_WriteRegister(BK4819_REG_06, (i & 7) << 13 | 0x4A << 7 | 0x36);
-	// 	}
-	// }
 }
 
 // REG_10, REG_11, REG_12 REG_13, REG_14
@@ -282,13 +267,13 @@ void BK4819_InitAGC(ModulationMode_t modulation)
 	if(modulation==MODULATION_AM)
 	{
 		//AM modulation
-		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (20 << 0));
+		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (25 << 0)); //TEST KAMILS 25 was 20
 	
 	} else {
 		//FM, USB modulation
 		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
 		}
-	LoadSettings(1);
+	//TEST KAMILS LoadSettings(1);
 	//TEST KAMILS BK4819_WriteRegister(BK4819_REG_7B, 0x8420); //Test 4.15
 	BK4819_WriteRegister(BK4819_REG_12, 0x0393);  // 0x037B / 000000 11 011 11 011 / -24dB //TEST KAMILS 
 	BK4819_WriteRegister(BK4819_REG_11, 0x01B5);  // 0x027B / 000000 10 011 11 011 / -43dB //TEST KAMILS 
@@ -482,32 +467,6 @@ void BK4819_SetTailDetection(const uint32_t freq_10Hz)
 	BK4819_WriteRegister(BK4819_REG_07, BK4819_REG_07_MODE_CTC2 | ((253910 + (freq_10Hz / 2)) / freq_10Hz));  // with rounding
 }
 
-void BK4819_EnableVox(uint16_t VoxEnableThreshold, uint16_t VoxDisableThreshold, uint8_t VoxDelay)
-{
-	//VOX Algorithm
-	//if (voxamp>VoxEnableThreshold)                VOX = 1;
-	//else
-	//if (voxamp<VoxDisableThreshold) (After Delay) VOX = 0;
-
-	const uint16_t REG_31_Value = BK4819_ReadRegister(BK4819_REG_31);
-
-	// 0xA000 is undocumented?
-	BK4819_WriteRegister(BK4819_REG_46, 0xA000 | (VoxEnableThreshold & 0x07FF));
-
-	// 0x1800 is undocumented?
-	BK4819_WriteRegister(BK4819_REG_79, 0x1800 | (VoxDisableThreshold & 0x07FF));
-
-	// Set VOX delay
-	// Bottom 12 bits are undocumented, 15:12 vox disable delay *128ms
-	// BK4819_WriteRegister(BK4819_REG_7A, 0x289A); // vox disable delay = 128*5 = 640ms
-	// max delay = F89A = 1920ms
-	// min delay = 089A = 0ms
-	BK4819_WriteRegister(BK4819_REG_7A, (0x289A & ~(0xF << 12))|(VoxDelay<<12));
-	
-    // Enable VOX
-	BK4819_WriteRegister(BK4819_REG_31, REG_31_Value | (1u << 2));    // VOX Enable
-}
-
 //1o11
 // // filter bandwidth lowers when signal is low
 // const uint16_t listenBWRegDynamicValues[5] = {
@@ -667,10 +626,6 @@ void BK4819_SetupSquelch(
 
 void BK4819_SetAF(BK4819_AF_Type_t AF)
 {
-	// AF Output Inverse Mode = Inverse
-	// Undocumented bits 0x2040
-	//
-//	BK4819_WriteRegister(BK4819_REG_47, 0x6040 | (AF << 8));
 	BK4819_WriteRegister(BK4819_REG_47, (6u << 12) | (AF << 8) | (1u << 6));
 }
 

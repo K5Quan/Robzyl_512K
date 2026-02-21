@@ -1657,11 +1657,12 @@ static uint16_t CountValidHistoryItems() {
 }
 
 static void Skip() {
+    
     WaitSpectrum = 0;
     spectrumElapsedCount = 0;
     gIsPeak = false;
     ToggleRX(false);
-    NextScanStep();
+    if (!SpectrumMonitor) NextScanStep();
 }
 
 static void SetTrigger50(){
@@ -2071,7 +2072,7 @@ static void OnKeyDown(uint8_t key) {
           int step = (settings.rssiTriggerLevelUp >= 20) ? 5 : 1;
           settings.rssiTriggerLevelUp = (settings.rssiTriggerLevelUp >= 50? 0 : settings.rssiTriggerLevelUp + step);
           SPECTRUM_PAUSED = true;
-          if (!SpectrumMonitor) Skip();
+          Skip();
           SetTrigger50();
           break;
       }
@@ -2080,7 +2081,7 @@ static void OnKeyDown(uint8_t key) {
           int step = (settings.rssiTriggerLevelUp <= 20) ? 1 : 5;
           settings.rssiTriggerLevelUp = (settings.rssiTriggerLevelUp <= 0? 50 : settings.rssiTriggerLevelUp - step);
           SPECTRUM_PAUSED = true;
-          if (!SpectrumMonitor) Skip();
+          Skip();
           SetTrigger50();
           break;
       }
@@ -2396,8 +2397,7 @@ static void OnKeyDownStill(KEY_Code_t key) {
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, true);
           } else if (SpectrumMonitor > 0) {
-             uint32_t step = GetScanStep() ;/// 10;
-             if (step < 1) step = 1;
+             uint32_t step = 10;
              peak.f += step;
              scanInfo.f = peak.f;
              SetF(peak.f);
@@ -2407,8 +2407,7 @@ static void OnKeyDownStill(KEY_Code_t key) {
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, false);
           } else if (SpectrumMonitor > 0) {
-             uint32_t step = GetScanStep();// / 10;
-             if (step < 1) step = 1;
+             uint32_t step = 10;
              if (peak.f > step) peak.f -= step;
              scanInfo.f = peak.f;
              SetF(peak.f);

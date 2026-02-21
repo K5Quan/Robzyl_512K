@@ -504,7 +504,7 @@ void RADIO_SetupRegisters(bool switchToForeground)
 		const uint16_t Status = BK4819_ReadRegister(BK4819_REG_0C);
 		if ((Status & 1u) == 0) // INTERRUPT REQUEST
 			break;
-
+		BK4819_WriteRegister(BK4819_REG_02, 0); //TEST KAMILS 
 		SYSTEM_DelayMs(1);
 	}
 	BK4819_WriteRegister(BK4819_REG_3F, 0);
