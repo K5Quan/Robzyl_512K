@@ -489,7 +489,7 @@ void RADIO_SetupRegisters(bool switchToForeground)
 	BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
 
 	BK4819_FilterBandwidth_t Bandwidth = gTxVfo->CHANNEL_BANDWIDTH;
-	BK4819_SetFilterBandwidth(Bandwidth, gTxVfo->Modulation != MODULATION_AM);
+	BK4819_SetFilterBandwidth(Bandwidth, false);
 
     //BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, true);
 

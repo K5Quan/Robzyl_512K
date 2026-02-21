@@ -1376,10 +1376,20 @@ switch(SpectrumMonitor) {
   len = sprintf(&String[pos],"%dms %s %s ", DelayRssi, gModulationStr[settings.modulationType],bwNames[settings.listenBw]);
   pos += len;
   int16_t afcVal = BK4819_GetAFCValue();
-  if (afcVal) {
+  if (afcVal && !SpectrumMonitor) {
       len = sprintf(&String[pos],"A%+d ", afcVal);
       pos += len;
   }
+
+  static const char* const scanStepNames[] = {
+      "0.01", "0.1", "0.5", "1", "2.5", "5", "6.25", "8.33", "10", "12.5", "25", "100", "500"
+  };
+  
+  if (SpectrumMonitor) {
+      len = sprintf(&String[pos], "%s", scanStepNames[settings.scanStepIndex]);
+      pos += len;
+  }
+ 
   GUI_DisplaySmallest(String, 0, 1, true,true);
   BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[gBatteryCheckCounter++ % 4]);
 
@@ -2397,21 +2407,21 @@ static void OnKeyDownStill(KEY_Code_t key) {
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, true);
           } else if (SpectrumMonitor > 0) {
-             uint32_t step = 10;
-             peak.f += step;
-             scanInfo.f = peak.f;
-             SetF(peak.f);
+                    uint32_t step = GetScanStep();
+                    peak.f += step;
+                    scanInfo.f = peak.f;
+                    SetF(peak.f);
           }
           break;
       case KEY_DOWN:
           if (stillEditRegs) {
             SetRegMenuValue(stillRegSelected, false);
           } else if (SpectrumMonitor > 0) {
-             uint32_t step = 10;
-             if (peak.f > step) peak.f -= step;
-             scanInfo.f = peak.f;
-             SetF(peak.f);
-          }
+                    uint32_t step = GetScanStep();// / 10;
+                    if (peak.f > step) peak.f -= step;
+                    scanInfo.f = peak.f;
+                    SetF(peak.f);
+                }
           break;
       case KEY_2: // przewijanie w górę po liście rejestrów
           if (stillEditRegs && stillRegSelected > 0) {
@@ -2424,9 +2434,11 @@ static void OnKeyDownStill(KEY_Code_t key) {
           }
       break;
       case KEY_STAR:
-      break;
+            UpdateScanStep(1);
+            break;
       case KEY_F:
-      break;
+            UpdateScanStep(0);
+            break;
       case KEY_5:
         //FreqInput();
       break;

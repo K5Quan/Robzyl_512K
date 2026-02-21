@@ -1,5 +1,5 @@
 AUTHOR_STRING := ""
-VERSION_STRING := V6.6_Beta
+VERSION_STRING := V6.6_B2
 # compile options (see README.md for descriptions)
 # 0 = disable
 # 1 = enable
