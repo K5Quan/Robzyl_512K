@@ -1408,6 +1408,27 @@ static void FormatFrequency(uint32_t f, char *buf, size_t buflen) {
     RemoveTrailZeros(buf);
 }
 
+static void FormatLastReceived(char *buf, size_t buflen) {
+  if (lastReceivingFreq < 1400000 || lastReceivingFreq > 130000000) {
+    snprintf(buf, buflen, "---");
+    return;
+  }
+
+  uint16_t channel = BOARD_gMR_fetchChannel(lastReceivingFreq);
+  if (channel != 0xFFFF) {
+    char savedName[12] = "";
+    ReadChannelName(channel, savedName);
+    if (savedName[0] != '\0') {
+      snprintf(buf, buflen, "%s", savedName);
+    } else {
+      snprintf(buf, buflen, "CH %u", channel + 1);
+    }
+    return;
+  }
+
+  FormatFrequency(lastReceivingFreq, buf, buflen);
+}
+
 // ------------------ CSS detection ------------------
 static void UpdateCssDetection(void) {
     // Проверяем только когда есть приём сигнала
@@ -1538,6 +1559,21 @@ static void DrawF(uint32_t f) {
                 GUI_DisplaySmallestDark	(">", 8, 17, false, false);
                 GUI_DisplaySmallestDark	("<", 118, 17, false, false);   
                 ArrowLine = 3;
+            }
+
+            if (ShowLines == 3) {
+              char lastRx[19] = "";
+              char lastRxFreq[19] = "---";
+              FormatLastReceived(lastRx, sizeof(lastRx));
+              if (lastReceivingFreq >= 1400000 && lastReceivingFreq <= 130000000) {
+                FormatFrequency(lastReceivingFreq, lastRxFreq, sizeof(lastRxFreq));
+              }
+              UI_PrintStringSmall(lastRxFreq, 1, LCD_WIDTH - 1, 0, 0);
+              UI_PrintStringSmall(lastRx, 1, LCD_WIDTH - 1, 1, 0);
+              GUI_DisplaySmallestDark(line3, 18, 17, false, true);
+              GUI_DisplaySmallestDark	(">", 8, 17, false, false);
+              GUI_DisplaySmallestDark	("<", 118, 17, false, false);
+              ArrowLine = 3;
             }
     if (Fmax) 
       {
@@ -1672,8 +1708,50 @@ static void Skip() {
     spectrumElapsedCount = 0;
     gIsPeak = false;
     ToggleRX(false);
-    if (!SpectrumMonitor) NextScanStep();
+    NextScanStep();
+    if (SpectrumMonitor) {
+      peak.f = scanInfo.f;
+      peak.i = scanInfo.i;
+      SetF(scanInfo.f);
+    }
 }
+
+/* static void Skip() {
+    
+    WaitSpectrum = 0;
+    spectrumElapsedCount = 0;
+    gIsPeak = false;
+    ToggleRX(false);
+
+    uint16_t maxIndex = GetStepsCount();
+
+    if (appMode == CHANNEL_MODE) {
+      if (scanChannelsCount == 0) {
+        return;
+      }
+
+      if (scanInfo.i >= maxIndex) {
+        scanInfo.i = 0;
+      } else {
+        scanInfo.i++;
+      }
+
+      uint16_t currentChannel = scanChannel[scanInfo.i];
+      scanInfo.f = gMR_ChannelFrequencyAttributes[currentChannel].Frequency;
+    } else {
+      if (scanInfo.i >= maxIndex) {
+        InitScan();
+      } else {
+        NextScanStep();
+      }
+    }
+
+    if (SpectrumMonitor) {
+      peak.f = scanInfo.f;
+      peak.i = scanInfo.i;
+      SetF(scanInfo.f);
+    }
+} */
 
 static void SetTrigger50(){
   char triggerText[32];
@@ -2149,9 +2227,16 @@ static void OnKeyDown(uint8_t key) {
           indexFs = 0;
           SpectrumMonitor = 0;
       } else {
-         // ShowLines++; 
-          //if (ShowLines > 3) ShowLines = 1; // 3 режима
-          ShowLines = (ShowLines == 1) ? 2 : 1;  // переключает только между 1 и 2
+          if (classic){
+              ShowLines++;
+              if (ShowLines > 3 || ShowLines < 1) ShowLines = 1;
+              char viewText[24];
+              const char *viewName = "CLASSIC";
+              if (ShowLines == 2) viewName = "BIG";
+              else if (ShowLines == 3) viewName = "LAST RX";
+              sprintf(viewText, "VIEW: %s", viewName);
+              ShowOSDPopup(viewText);
+          }
       }
     break;
 
@@ -2289,7 +2374,7 @@ static void OnKeyDown(uint8_t key) {
         if (SpectrumMonitor > 2) SpectrumMonitor = 0; // 0 normal, 1 Freq lock, 2 Monitor
 		    char monitorText[32];
         const char* modes[] = {"NORMAL", "FREQ LOCK", "MONITOR"};
-        sprintf(monitorText, "MODE: %s", modes[SpectrumMonitor]);
+    	      sprintf(monitorText, "MODE: %s", modes[SpectrumMonitor]);
 	      ShowOSDPopup(monitorText);
         if(SpectrumMonitor == 2) ToggleRX(1);
     break;
@@ -2393,6 +2478,8 @@ static void OnKeyDownFreqInput(uint8_t key) {
   }
 }
 
+static int16_t storedScanStepIndex = -1;
+
 static void OnKeyDownStill(KEY_Code_t key) {
   BACKLIGHT_TurnOn();
   switch (key) {
@@ -2434,9 +2521,15 @@ static void OnKeyDownStill(KEY_Code_t key) {
           }
       break;
       case KEY_STAR:
+            if (storedScanStepIndex == -1) {
+                storedScanStepIndex = settings.scanStepIndex;
+            }
             UpdateScanStep(1);
             break;
       case KEY_F:
+            if (storedScanStepIndex == -1) {
+                storedScanStepIndex = settings.scanStepIndex;
+            }
             UpdateScanStep(0);
             break;
       case KEY_5:
@@ -2460,6 +2553,11 @@ static void OnKeyDownStill(KEY_Code_t key) {
             WaitSpectrum = 0; //don't wait if this frequency not interesting
       break;
       case KEY_PTT:
+        if (storedScanStepIndex != -1) { // Restore scan step when exiting with PTT
+            settings.scanStepIndex = storedScanStepIndex;
+            scanInfo.scanStep = settings.scanStepIndex;
+            storedScanStepIndex = -1;
+        }
         ExitAndCopyToVfo();
         break;
       case KEY_MENU:
@@ -2469,6 +2567,11 @@ static void OnKeyDownStill(KEY_Code_t key) {
         if (stillEditRegs) {
           stillEditRegs = false;
         break;
+        }
+        if (storedScanStepIndex != -1) {
+            settings.scanStepIndex = storedScanStepIndex;
+            scanInfo.scanStep = settings.scanStepIndex;
+            storedScanStepIndex = -1;
         }
         SetState(SPECTRUM);
         WaitSpectrum = 0; //Prevent coming back to still directly
@@ -2721,12 +2824,12 @@ static void RenderStill() {
   sLevelAtt = GetSLevelAttributes(scanInfo.rssi, scanInfo.f);
 
   if(sLevelAtt.over > 0)
-    sprintf(String, "S%2d+%2d", sLevelAtt.sLevel, sLevelAtt.over);
+    snprintf(String, sizeof(String), "S%2d+%2d", sLevelAtt.sLevel, sLevelAtt.over);
   else
-    sprintf(String, "S%2d", sLevelAtt.sLevel);
+    snprintf(String, sizeof(String), "S%2d", sLevelAtt.sLevel);
 
   GUI_DisplaySmallest(String, 4, 25, false, true);
-  sprintf(String, "%d dBm", sLevelAtt.dBmRssi);
+  snprintf(String, sizeof(String), "%d dBm", sLevelAtt.dBmRssi);
   GUI_DisplaySmallest(String, 40, 25, false, true);
 
 
@@ -3244,6 +3347,7 @@ void LoadSettings(bool LNA)
   PttEmission = eepromData.PttEmission;
   validScanListCount = 0;
   ShowLines = eepromData.ShowLines;
+  if (ShowLines < 1 || ShowLines > 3) ShowLines = 1;
   SpectrumDelay = eepromData.SpectrumDelay;
   
   IndexMaxLT = eepromData.IndexMaxLT;
@@ -3431,7 +3535,7 @@ static bool GetScanListLabel(uint8_t scanListIndex, char* bufferOut) {
 
     // Метка "<" слева от номера
     if (settings.scanListEnabled[scanListIndex]) {
-        sprintf(bufferOut, "> %d:%-11s", scanListIndex + 1, nameOrFreq);
+      sprintf(bufferOut, "> %d:%-11s*", scanListIndex + 1, nameOrFreq);
     } else {
         sprintf(bufferOut, " %d:%-11s", scanListIndex + 1, nameOrFreq);
     }
@@ -3481,58 +3585,58 @@ static void GetParametersText(uint16_t index, char *buffer) {
             
         case 4: {
             uint32_t start = gScanRangeStart;
-            sprintf(buffer, "Fstart: %u.%05u", start / 100000, start % 100000);
+          sprintf(buffer, "Fstart: %u.%05u", start / 100000, start % 100000);
             break;
         }
             
         case 5: {
             uint32_t stop = gScanRangeStop;
-            sprintf(buffer, "Fstop: %u.%05u", stop / 100000, stop % 100000);
+          sprintf(buffer, "Fstop: %u.%05u", stop / 100000, stop % 100000);
             break;
         }
       
         case 6: {
             uint32_t step = GetScanStep();
-            sprintf(buffer, step % 100 ? "Step: %uk%02u" : "Step: %uk", 
+          sprintf(buffer, step % 100 ? "Step: %uk%02u" : "Step: %uk", 
                    step / 100, step % 100);
             break;
         }
             
         case 7:
-            sprintf(buffer, "Listen BW: %s", bwNames[settings.listenBw]);
+          sprintf(buffer, "Listen BW: %s", bwNames[settings.listenBw]);
             break;
             
         case 8:
-            sprintf(buffer, "Modulation: %s", gModulationStr[settings.modulationType]);
+          sprintf(buffer, "Modulation: %s", gModulationStr[settings.modulationType]);
             break;
         
         case 9:
-            sprintf(buffer, "Reset Default: 3");
+          sprintf(buffer, "Reset Default: 3");
             break;
         case 10:
             if (Backlight_On_Rx)
-            sprintf(buffer, "RX Backlight ON");
-            else sprintf(buffer, "RX Backlight OFF");
+          sprintf(buffer, "RX Backlight ON");
+          else sprintf(buffer, "RX Backlight OFF");
             break;
         case 11:
-            if (gCounthistory) sprintf(buffer, "Freq Counting");
-            else sprintf(buffer, "Time Counting");
+          if (gCounthistory) sprintf(buffer, "Freq Counting");
+          else sprintf(buffer, "Time Counting");
             break;
 
         case 12:
-            sprintf(buffer, "Clear History: 3");
+          sprintf(buffer, "Clear History: 3");
             break;
 
         case 13:
             uint32_t free = free_ram_bytes();
-            sprintf(buffer, "Free RAM %uB", (unsigned)free);
+          sprintf(buffer, "Free RAM %uB", (unsigned)free);
             break;
 
         case 14:
-            sprintf(buffer, "Power Save: %s", labelsPS[IndexPS]);
+          sprintf(buffer, "Power Save: %s", labelsPS[IndexPS]);
             break;
         case 15:
-            sprintf(buffer, "Nois LVL OFF: %d", Noislvl_OFF);
+          sprintf(buffer, "Nois LVL OFF: %d", Noislvl_OFF);
             break;
         case 16:
             if (osdPopupSetting) {
@@ -3540,12 +3644,12 @@ static void GetParametersText(uint16_t index, char *buffer) {
                 uint8_t decimals = (osdPopupSetting % 1000) / 100;
 
                 if (decimals) {
-                    sprintf(buffer, "Popups: %d.%ds", seconds, decimals);
+              sprintf(buffer, "Popups: %d.%ds", seconds, decimals);
                 } else {
-                    sprintf(buffer, "Popups: %ds", seconds);
+              sprintf(buffer, "Popups: %ds", seconds);
                 }
             } else {
-                sprintf(buffer, "No Popups");
+            sprintf(buffer, "No Popups");
             }
             break;
         
@@ -3664,7 +3768,7 @@ static void GetHistoryItemText(uint16_t index, char* buffer) {
 
 //*******************************СПИСКИ*****************************// */
 static void RenderList(const char* title, uint16_t numItems, uint16_t selectedIndex, uint16_t scrollOffset,
-                      void (*getItemText)(uint16_t index, char* buffer)) {
+                      void (*getItemText)(uint16_t index, char* buffer), bool invertSelectedBg) {
     // Clear display buffer
     memset(gFrameBuffer, 0, sizeof(gFrameBuffer));
     
@@ -3697,6 +3801,13 @@ static void RenderList(const char* title, uint16_t numItems, uint16_t selectedIn
         
         // Wyrównanie maksymalnie do lewej
         if (itemIndex == selectedIndex) {
+        if (invertSelectedBg) {
+          for (uint8_t x = 0; x < LCD_WIDTH; x++) {
+            for (uint8_t y = lineNumber * 8; y < (lineNumber + 1) * 8; y++) {
+              PutPixel(x, y, true);
+            }
+          }
+        }
         char displayText[MAX_CHARS_PER_LINE + 1];
         strcpy(displayText, itemText);
         char selectedText[MAX_CHARS_PER_LINE + 2];
@@ -3717,57 +3828,65 @@ static void RenderList(const char* title, uint16_t numItems, uint16_t selectedIn
 
 // Fonction pour afficher le menu ScanList
 static void RenderScanListSelect() {
-    BuildValidScanListIndices(); 
-    RenderList("SCANLISTS:", validScanListCount,scanListSelectedIndex, scanListScrollOffset, GetFilteredScanListText);
+  BuildValidScanListIndices();
+  uint8_t selectedCount = 0;
+  for (uint8_t i = 0; i < validScanListCount; i++) {
+    if (settings.scanListEnabled[validScanListIndices[i]]) {
+      selectedCount++;
+    }
+  }
+  char title[24];
+  snprintf(title, sizeof(title), "SCANLISTS: %u/%u", selectedCount, validScanListCount);
+  RenderList(title, validScanListCount,scanListSelectedIndex, scanListScrollOffset, GetFilteredScanListText, true);
 }
 
 static void RenderParametersSelect() {
-  RenderList("PARAMETERS:", PARAMETER_COUNT,parametersSelectedIndex, parametersScrollOffset, GetParametersText);
+  RenderList("PARAMETERS:", PARAMETER_COUNT,parametersSelectedIndex, parametersScrollOffset, GetParametersText, false);
 }
 
 
 #ifdef ENABLE_FR_BAND
-      static void RenderBandSelect() {RenderList("FRA BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("FRA BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_SR_BAND
-      static void RenderBandSelect() {RenderList("SR BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("SR BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_IN_BAND
-      static void RenderBandSelect() {RenderList("INT BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("INT BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_FI_BAND
-      static void RenderBandSelect() {RenderList("FI BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("FI BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_BR_BAND
-      static void RenderBandSelect() {RenderList("BR BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("BR BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_PL_BAND
-      static void RenderBandSelect() {RenderList("POL BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("POL BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_RO_BAND
-      static void RenderBandSelect() {RenderList("ROM BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("ROM BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_KO_BAND
-      static void RenderBandSelect() {RenderList("KOL BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("KOL BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_CZ_BAND
-      static void RenderBandSelect() {RenderList("CZ BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("CZ BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_TU_BAND
-      static void RenderBandSelect() {RenderList("TU BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("TU BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 #ifdef ENABLE_RU_BAND
-      static void RenderBandSelect() {RenderList("RUS BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText);}
+      static void RenderBandSelect() {RenderList("RUS BANDS:", ARRAY_SIZE(BParams),bandListSelectedIndex, bandListScrollOffset, GetBandItemText, false);}
 #endif
 
 static void RenderHistoryList() {
@@ -3848,7 +3967,7 @@ static void BuildScanListChannels(uint8_t scanListIndex) {
 static void RenderScanListChannels() {
     char headerString[24];
     uint8_t realScanListIndex = validScanListIndices[selectedScanListIndex];
-    sprintf(headerString, "SL %d CHANNELS:", realScanListIndex + 1);
+  sprintf(headerString, "SL %d CHANNELS:", realScanListIndex + 1);
     
     // Specjalna obsługa dwulinijkowa
     RenderScanListChannelsDoubleLines(headerString, scanListChannelsCount, 

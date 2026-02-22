@@ -483,20 +483,12 @@ void RADIO_SelectVfos(void)
 void RADIO_SetupRegisters(bool switchToForeground)
 {
 	GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
-
 	gEnableSpeaker = false;
-
 	BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
-
 	BK4819_FilterBandwidth_t Bandwidth = gTxVfo->CHANNEL_BANDWIDTH;
-	BK4819_SetFilterBandwidth(Bandwidth, false);
-
-    //BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE, true);
-
+	BK4819_SetFilterBandwidth(Bandwidth, gTxVfo->Modulation != MODULATION_AM);
 	BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
-
 	BK4819_SetupPowerAmplifier(0, 0);
-
 	BK4819_ToggleGpioOut(BK4819_GPIO1_PIN29_PA_ENABLE, false);
 	int safety = 100; // max 100 interruptions
 	while (--safety > 0)
