@@ -267,21 +267,14 @@ void BK4819_InitAGC(ModulationMode_t modulation)
 	if(modulation==MODULATION_AM)
 	{
 		//AM modulation
-		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (25 << 0)); //TEST KAMILS 25 was 20
+		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (20 << 0));
 	
 	} else {
 		//FM, USB modulation
 		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
 		}
-	//TEST KAMILS LoadSettings(1);
-	//TEST KAMILS BK4819_WriteRegister(BK4819_REG_7B, 0x8420); //Test 4.15
-	BK4819_WriteRegister(BK4819_REG_12, 0x0393);  // 0x037B / 000000 11 011 11 011 / -24dB //TEST KAMILS 
-	BK4819_WriteRegister(BK4819_REG_11, 0x01B5);  // 0x027B / 000000 10 011 11 011 / -43dB //TEST KAMILS 
-	BK4819_WriteRegister(BK4819_REG_10, 0x0145);  // 0x007A / 000000 00 011 11 010 / -58dB //TEST KAMILS 
-	BK4819_WriteRegister(BK4819_REG_14, 0x0019);  // 0x0019 / 000000 00 000 11 001 / -84dB //TEST KAMILS 
-	BK4819_WriteRegister(0x54, 0x90D1);    // default is 0x9009
-    BK4819_WriteRegister(0x55, 0x3271);    // default is 0x31a9
-    BK4819_WriteRegister(0x75, 0xFC13); 
+	
+	BK4819_WriteRegister(BK4819_REG_7B, 0x8420); //Test 4.15
 }
 
 void BK4819_InitAGCSpectrum(ModulationMode_t modulation)

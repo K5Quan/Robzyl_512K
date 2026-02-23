@@ -95,6 +95,7 @@ static bool    SoundBoost = 1;               // case 20
 #define PARAMETER_COUNT 21
 ////////////////////////////////////////////////////////////////////
 
+static bool SettingsLoaded = false;
 uint8_t  gKeylockCountdown = 0;
 bool     gIsKeylocked = false;
 static uint16_t osdPopupTimer = 0;
@@ -163,7 +164,7 @@ static uint16_t scanChannelsCount;
 static void ToggleScanList();
 static void SaveSettings();
 static const uint16_t RSSI_MAX_VALUE = 255;
-static uint16_t R30, R37, R3D, R43, R47, R48, R7E, R02, R3F;
+static uint16_t R30, R37, R3D, R43, R47, R48, R7E, R02, R3F, R7B, R12, R11, R14, R54, R55, R75;
 static char String[100];
 static char StringC[10];
 static bool isKnownChannel = false;
@@ -434,6 +435,13 @@ static void BackupRegisters() {
   R7E = BK4819_ReadRegister(BK4819_REG_7E);
   R02 = BK4819_ReadRegister(BK4819_REG_02);
   R3F = BK4819_ReadRegister(BK4819_REG_3F);
+  R7B = BK4819_ReadRegister(BK4819_REG_7B);
+  R12 = BK4819_ReadRegister(BK4819_REG_12);
+  R11 = BK4819_ReadRegister(BK4819_REG_11);
+  R14 = BK4819_ReadRegister(BK4819_REG_14);
+  R54 = BK4819_ReadRegister(BK4819_REG_54);
+  R55 = BK4819_ReadRegister(BK4819_REG_55);
+  R75 = BK4819_ReadRegister(BK4819_REG_75);
 }
 
 static void RestoreRegisters() {
@@ -446,6 +454,13 @@ static void RestoreRegisters() {
   BK4819_WriteRegister(BK4819_REG_7E, R7E);
   BK4819_WriteRegister(BK4819_REG_02, R02);
   BK4819_WriteRegister(BK4819_REG_3F, R3F);
+  BK4819_WriteRegister(BK4819_REG_7B, R7B);
+  BK4819_WriteRegister(BK4819_REG_12, R12);
+  BK4819_WriteRegister(BK4819_REG_11, R11);
+  BK4819_WriteRegister(BK4819_REG_14, R14);
+  BK4819_WriteRegister(BK4819_REG_54, R54);
+  BK4819_WriteRegister(BK4819_REG_55, R55);
+  BK4819_WriteRegister(BK4819_REG_75, R75);
 }
 
 static void ToggleAFBit(bool on) {
@@ -1703,17 +1718,17 @@ static uint16_t CountValidHistoryItems() {
 }
 
 static void Skip() {
-    
-    WaitSpectrum = 0;
-    spectrumElapsedCount = 0;
-    gIsPeak = false;
-    ToggleRX(false);
-    NextScanStep();
-    if (SpectrumMonitor) {
+  if (!SpectrumMonitor) {  
+      WaitSpectrum = 0;
+      spectrumElapsedCount = 0;
+      gIsPeak = false;
+      ToggleRX(false);
+      NextScanStep();
       peak.f = scanInfo.f;
       peak.i = scanInfo.i;
       SetF(scanInfo.f);
-    }
+
+  }
 }
 
 /* static void Skip() {
@@ -2259,7 +2274,8 @@ static void OnKeyDown(uint8_t key) {
         if (historyListIndex < historyScrollOffset) {
             historyScrollOffset = historyListIndex;
         }
-        SetF(HFreqs[historyListIndex]);
+        lastReceivingFreq = HFreqs[historyListIndex];
+        SetF(lastReceivingFreq);
       } else {
         if (appMode==SCAN_BAND_MODE) {
             ToggleScanList(bl, 1);
@@ -2299,7 +2315,8 @@ static void OnKeyDown(uint8_t key) {
         if (historyListIndex >= historyScrollOffset + MAX_VISIBLE_LINES) {
             historyScrollOffset = historyListIndex - MAX_VISIBLE_LINES + 1;
         }
-        SetF(HFreqs[historyListIndex]);
+        lastReceivingFreq = HFreqs[historyListIndex];
+        SetF(lastReceivingFreq);
     } else {
         if (appMode==SCAN_BAND_MODE) {
             ToggleScanList(bl, 1);
@@ -2750,9 +2767,8 @@ MyDrawFrameLines();
       DrawF(peak.f);
     }
     else {
-      //if (SpectrumMonitor) DrawF(HFreqs[historyListIndex]);
-      //else 
-      DrawF(scanInfo.f);
+      if (SpectrumMonitor) DrawF(lastReceivingFreq);
+      else DrawF(scanInfo.f);
     }
 }
 
@@ -3078,7 +3094,7 @@ static void UpdateListening(void) { // called every 10ms
     spectrumElapsedCount += 10; //in ms
     uint32_t maxCount = (uint32_t)MaxListenTime * 1000;
 
-    if (MaxListenTime && spectrumElapsedCount >= maxCount) {
+    if (MaxListenTime && spectrumElapsedCount >= maxCount && !SpectrumMonitor) {
         // délai max atteint → reset
         ToggleRX(false);
         Skip();
@@ -3319,6 +3335,7 @@ typedef struct {
 
 void LoadSettings(bool LNA)
 {
+  if(SettingsLoaded) return;
   SettingsEEPROM  eepromData  = {0};
   EEPROM_ReadBuffer(0x1D10, &eepromData, sizeof(eepromData));
   
@@ -3382,6 +3399,7 @@ void LoadSettings(bool LNA)
      historyLoaded = true;
   }
 #endif
+SettingsLoaded = true;
 }
 
 static void SaveSettings() 
