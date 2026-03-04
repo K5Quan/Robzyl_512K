@@ -1540,8 +1540,7 @@ static void UpdateCssDetection(void) {
 static void DrawF(uint32_t f) {
     if ((f == 0) || f < 1400000 || f > 130000000) return;
     char freqStr[18];
-    //FormatFrequency(f, freqStr, sizeof(freqStr));
-    snprintf(freqStr, sizeof(freqStr), "%u.%05u", f / 100000, f % 100000); //последние нули
+    snprintf(freqStr, sizeof(freqStr), "%u.%05u", f / 100000, f % 100000);
     UpdateCssDetection(); // субтон новый
     uint16_t channelFd = BOARD_gMR_fetchChannel(f);
     isKnownChannel = (channelFd != 0xFFFF);
@@ -1553,13 +1552,11 @@ static void DrawF(uint32_t f) {
     sprintf(line1, "%s", freqStr);
     sprintf(line1b, "%s %s", freqStr, StringCode);
     
-    // Обновляем имя канала раз в секунду (как было в старом коде)
     if (gNextTimeslice_1s) {
         ReadChannelName(channelFd, channelName);
         gNextTimeslice_1s = 0;
     }
 
-    // line2 — имя списка/бэнда + имя канала (точно как в старом коде, но безопасно)
     char prefix[9] = "";
     if (appMode == SCAN_BAND_MODE) {
         snprintf(prefix, sizeof(prefix), "B%u ", bl + 1);
@@ -1574,21 +1571,19 @@ static void DrawF(uint32_t f) {
             } else {
             snprintf(prefix, sizeof(prefix), "ALL ");
               }
-        // Показываем имя канала, если есть
         if (channelName[0] != '\0') {
             snprintf(line2, sizeof(line2), "%-3s%s ", prefix, channelName);
         } else {
-            snprintf(line2, sizeof(line2), "%-3s", prefix);  // только префикс, если нет имени
+            snprintf(line2, sizeof(line2), "%-3s", prefix);
         }
     } else {
         line2[0] = '\0';
     }
 
-    // line3 — логика ровно по твоему описанию
     line3[0] = '\0';
     int pos = 0;
 
-    // 1. Если есть MaxListenTime → показываем только его + End (если есть)
+    
     if (MaxListenTime > 0) {
         pos += sprintf(&line3[pos], "RX%d|%s", spectrumElapsedCount / 1000, labels[IndexMaxLT]);
         
@@ -1600,7 +1595,6 @@ static void DrawF(uint32_t f) {
             }
         }
     }
-    // 2. Если MaxListenTime НЕ установлен → показываем Rx + End (если есть)
     else {
         pos += sprintf(&line3[pos], "RX%d", spectrumElapsedCount / 1000);
         
@@ -1804,24 +1798,15 @@ static void nextFrequencyinterlaced() {
                 break;
             }
         }
-        
         jumpSize = jumpSizes[idx];
         loops    = interlacedLoops[idx];
-        
-        // Calcul du nombre de colonnes (nombre de sauts de 25k ou 30k)
-        // On utilise le nombre total de pas divisé par le nombre de passages
         columns = (GetStepsCount() + (loops - 1)) / loops;
         if (columns == 0) columns = 1;
     }
-
-    // Calcul des coordonnées dans la grille d'entrelacement
     uint32_t currentColumn = scanInfo.i % columns;
     uint32_t currentPass   = scanInfo.i / columns;
-
-    // Calcul de la fréquence : Start + (Saut * Colonne) + (Pas * Passage)
     scanInfo.f = gScanRangeStart + (currentColumn * jumpSize) + (currentPass * lastStep);
 char str[64] = "";sprintf(str, "%d\r\n", scanInfo.f );LogUart(str);
-
 }
 
 
@@ -1831,27 +1816,16 @@ static void NextScanStep() {
 
     if (appMode == CHANNEL_MODE) { 
         if (scanChannelsCount == 0) return;
-        
-        // Incrément classique pour les canaux
         if (++scanInfo.i >= scanChannelsCount)
             scanInfo.i = 0;
-
         scanInfo.f = gMR_ChannelFrequencyAttributes[scanChannel[scanInfo.i]].Frequency;
     } 
     else {
-        // --- MODE SPECTRUM / FREQUENCE ---
-        
-        // 1. Calculer la fréquence pour l'index actuel (i commence à 0)
         if (scanInfo.scanStep < 2500 || scanInfo.scanStep == 1000) {
             nextFrequencyinterlaced();
         } else {
-            // Pour les pas >= 25k, on fait un simple ajout linéaire
-            // Note : on ajoute scanStep * i pour rester en calcul absolu (plus précis)
             scanInfo.f = gScanRangeStart + (scanInfo.i * scanInfo.scanStep);
         }
-
-        // 2. Incrémenter l'index pour le PROCHAIN passage
-        // Si on atteint le max, UpdateScan se chargera de repasser à 0
         scanInfo.i++;
     }
 }
@@ -2525,8 +2499,6 @@ static void OnKeyDown(uint8_t key) {
 
         gRequestedSpectrumState = Spectrum_state;
         gSpectrumChangeRequested = true;
-     
-        // Полный сброс состояния спектра при смене режима
         isInitialized = false;
         spectrumElapsedCount = 0;
         WaitSpectrum = 0;
@@ -2534,9 +2506,7 @@ static void OnKeyDown(uint8_t key) {
         SPECTRUM_PAUSED = false;
         SpectrumPauseCount = 0;
         newScanStart = true;
-        ToggleRX(false);  // выкл RX на время смены
-
-          // обновляем индикатор режима
+        ToggleRX(false);  
         break;
   
 case KEY_SIDE1:
@@ -2545,7 +2515,6 @@ case KEY_SIDE1:
     if (SpectrumMonitor > 2) SpectrumMonitor = 0; // 0 normal, 1 Freq lock, 2 Monitor
 
     if (SpectrumMonitor == 1) {
-        // jeśli nie ma ostatniego RX, użyj aktualnego skanowania
         if (lastReceivingFreq < 1400000 || lastReceivingFreq > 130000000) {
             lastReceivingFreq = (scanInfo.f >= 1400000) ? scanInfo.f : gScanRangeStart;
         }
