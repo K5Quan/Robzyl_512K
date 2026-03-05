@@ -667,65 +667,44 @@ static void DeleteHistoryItem(void) {
 }
 
 
-#include "settings.h" // Assurez-vous que ce fichier est inclus pour SETTINGS_SaveChannel
+#include "settings.h"
 
 static void SaveHistoryToFreeChannel(void) {
     if (!historyListActive) return;
 
     uint32_t f = HFreqs[historyListIndex];
-    if (f < 1000000) return; // Sécurité fréquence invalide
-
+    if (f < 1000000) return;
     char str[32];
-
-    // --- ÉTAPE 1 : VÉRIFIER SI LA FRÉQUENCE EXISTE DÉJÀ ---
     for (int i = 0; i < MR_CHANNEL_LAST; i++) {
         uint32_t freqInMem;
-        // Lecture des 4 premiers octets du canal (la fréquence)
         EEPROM_ReadBuffer(ADRESS_FREQ_PARAMS + (i * 16), (uint8_t *)&freqInMem, 4);
-        
-        // Si le canal n'est pas vide (0xFFFFFFFF) et que la fréquence correspond
         if (freqInMem != 0xFFFFFFFF && freqInMem == f) {
             sprintf(str, "Exist CH %d", i + 1);
-            
             ShowOSDPopup(str);
-            return; // On arrête ici, pas de sauvegarde
+            return;
         }
     }
-
-    // --- ÉTAPE 2 : CHERCHER UN EMPLACEMENT LIBRE ---
     int freeCh = -1;
     for (int i = 0; i < MR_CHANNEL_LAST; i++) {
         uint8_t checkByte;
-        // On vérifie juste le premier octet pour voir si le slot est libre
         EEPROM_ReadBuffer(ADRESS_FREQ_PARAMS + (i * 16), &checkByte, 1);
         if (checkByte == 0xFF) { 
             freeCh = i;
             break;
         }
     }
-
-    // --- ÉTAPE 3 : SAUVEGARDER ---
-    
     if (freeCh != -1) {
         VFO_Info_t tempVFO;
         memset(&tempVFO, 0, sizeof(tempVFO)); 
-
-        // Remplissage des paramètres
         tempVFO.freq_config_RX.Frequency = f;
         tempVFO.freq_config_TX.Frequency = f; 
         tempVFO.TX_OFFSET_FREQUENCY = 0;
-        
         tempVFO.Modulation = settings.modulationType;
         tempVFO.CHANNEL_BANDWIDTH = settings.listenBw; 
-
         tempVFO.OUTPUT_POWER = OUTPUT_POWER_LOW;
         tempVFO.STEP_SETTING = STEP_12_5kHz; 
-        // Sauvegarde propre via la fonction système
         SETTINGS_SaveChannel(freeCh, &tempVFO, 2);
-
-        // Rafraichir les listes
         LoadValidMemoryChannels();
-
         sprintf(str, "SAVED TO CH %d", freeCh + 1);
         ShowOSDPopup(str);
     } else {
@@ -846,14 +825,9 @@ if (historyListActive == true){
       DeInitSpectrum(0);
       break;
   }
-    // Additional delay to debounce keys
     SYSTEM_DelayMs(200);
     isInitialized = false;
 }
-
-/* static uint8_t GetBWRegValueForScan() {
-  return scanStepBWRegValues[settings.scanStepIndex];
-} */
 
 static uint16_t GetRssi(void) {
     uint16_t rssi;
@@ -1332,19 +1306,12 @@ static int16_t Rssi2Y(uint16_t rssi) {
   return DrawingEndY + delta -Rssi2PX(rssi, delta, DrawingEndY);
 }
 
-
-static void DrawSpectrum()
-{
-        const uint8_t left_margin  = 3;
-        const uint8_t right_margin = 3;
-        const uint8_t graph_width  = 128 - left_margin - right_margin;
-
-        for (uint8_t i = 0; i < graph_width && i < 128; ++i) {
-            uint8_t x = left_margin + i;
-            uint16_t rssi = rssiHistory[i];
-
-            if (rssi != RSSI_MAX_VALUE) {
-                DrawVLine(Rssi2Y(rssi), DrawingEndY, x, true);
+static void DrawSpectrum(void) {
+    int16_t y_baseline = Rssi2Y(0); 
+    for (uint8_t i = 0; i < 127; i++) {
+        int16_t y_curr = Rssi2Y(rssiHistory[i]);
+        for (int16_t y = y_curr; y <= y_baseline; y++) {
+                gFrameBuffer[y >> 3][i] |= (1 << (y & 7));
             }
         }
 }
@@ -1364,67 +1331,10 @@ static void RemoveTrailZeros(char *s) {
 
 //******************************СТАТУСБАР************** */
 static void DrawStatus() {
+static const char* const scanStepNames[] = {"10", "100", "500", "1k", "2k5", "5k", "6k25", "8k33", "10k", "12k5", "25k", "100k", "500k"};
   int len=0;
   int pos=0;
-   switch(appMode) {
-    case FREQUENCY_MODE:
-      len = sprintf(&String[pos],"FR ");
-      pos += len;
-    break;
-
-    case CHANNEL_MODE:
-      len = sprintf(&String[pos],"SL ");
-      pos += len;
-    break;
-
-    case SCAN_RANGE_MODE:
-      len = sprintf(&String[pos],"RG ");
-      pos += len;
-    break;
-    
-    case SCAN_BAND_MODE:
-#ifdef ENABLE_FR_BAND
-      len = sprintf(&String[pos],"BD ");
-#endif
-
-#ifdef ENABLE_IN_BAND
-      len = sprintf(&String[pos],"IN ");
-#endif
-
-#ifdef ENABLE_FI_BAND
-      len = sprintf(&String[pos],"FI ");
-#endif
-
-#ifdef ENABLE_SR_BAND
-      len = sprintf(&String[pos],"SR ");
-#endif
-
-#ifdef ENABLE_PL_BAND
-      len = sprintf(&String[pos],"PL ");
-#endif
-
-#ifdef ENABLE_RO_BAND
-      len = sprintf(&String[pos],"RO ");
-#endif
-
-#ifdef ENABLE_KO_BAND
-      len = sprintf(&String[pos],"KO ");
-#endif
-
-#ifdef ENABLE_CZ_BAND
-      len = sprintf(&String[pos],"CZ ");
-#endif
-
-#ifdef ENABLE_TU_BAND
-      len = sprintf(&String[pos],"TU ");
-#endif
-
-#ifdef ENABLE_RU_BAND
-      len = sprintf(&String[pos],"RU ");
-#endif
-      pos += len;
-    break;
-  } 
+   
 switch(SpectrumMonitor) {
     case 0:
       len = sprintf(&String[pos],"");
@@ -1445,20 +1355,14 @@ switch(SpectrumMonitor) {
   else len = sprintf(&String[pos],"U%d ", settings.rssiTriggerLevelUp);
   pos += len;
   
-  len = sprintf(&String[pos],"%dms %s %s ", DelayRssi, gModulationStr[settings.modulationType],bwNames[settings.listenBw]);
+  len = sprintf(&String[pos],"%dms %s BW%s ", DelayRssi, gModulationStr[settings.modulationType],bwNames[settings.listenBw]);
   pos += len;
   int16_t afcVal = BK4819_GetAFCValue();
-  if (afcVal && !SpectrumMonitor) {
+  if (afcVal) {
       len = sprintf(&String[pos],"A%+d ", afcVal);
       pos += len;
-  }
-
-  static const char* const scanStepNames[] = {
-      "0.01", "0.1", "0.5", "1", "2.5", "5", "6.25", "8.33", "10", "12.5", "25", "100", "500"
-  };
-  
-  if (SpectrumMonitor) {
-      len = sprintf(&String[pos], "%s", scanStepNames[settings.scanStepIndex]);
+  } else {
+      len = sprintf(&String[pos], "ST %s", scanStepNames[settings.scanStepIndex]);
       pos += len;
   }
  
@@ -1540,7 +1444,11 @@ static void UpdateCssDetection(void) {
 static void DrawF(uint32_t f) {
     if ((f == 0) || f < 1400000 || f > 130000000) return;
     char freqStr[18];
+    if(isListening) {
     snprintf(freqStr, sizeof(freqStr), "%u.%05u", f / 100000, f % 100000);
+    } else {
+        snprintf(freqStr, sizeof(freqStr), "%u.%01u", f / 100000, (f % 100000) / 10000);
+    }
     UpdateCssDetection(); // субтон новый
     uint16_t channelFd = BOARD_gMR_fetchChannel(f);
     isKnownChannel = (channelFd != 0xFFFF);
@@ -1674,21 +1582,21 @@ if (ShowLines == 4) {
           GUI_DisplaySmallest(freqStr,  50, Bottom_print, false,true);
       }
 
-    } else { //Not Classic — ПРОСТОЙ РЕЖИМ ЛИНИИ
+    } else { //Not Classic
 
-    DrawMeter(4); // положение бара
+    DrawMeter(4);
 #ifdef ENABLE_SPECTRUM_LINES
-    MyDrawShortHLine(10, 0, 127, 2, false);  // верх кор лев
-    MyDrawShortHLine(35, 0, 5, 1, false);  // верх кор лев
-    MyDrawShortHLine(35, 122, 127, 1, false);  // верх кор прав
-    MyDrawVLine(0,   35, 57, 1);  // левая вертикальная сплошная
-    MyDrawVLine(127, 35, 57, 1);  // правая вертикальная сплошная           
+    MyDrawShortHLine(10, 0, 127, 2, false);
+    MyDrawShortHLine(35, 0, 5, 1, false);
+    MyDrawShortHLine(35, 122, 127, 1, false);
+    MyDrawVLine(0,   35, 57, 1);
+    MyDrawVLine(127, 35, 57, 1);         
 #endif
-    UI_DisplayFrequency(line1, 10, 2, 0); // большая частота — теперь без условия!
-    UI_PrintString(line2, 5, LCD_WIDTH - 1, 5, 8); // имя список
+    UI_DisplayFrequency(line1, 10, 2, 0);
+    UI_PrintString(line2, 5, LCD_WIDTH - 1, 5, 8);
     GUI_DisplaySmallestDark(">",     2, 22, false, false);
     GUI_DisplaySmallestDark("<", 123, 22, false, false);  
-    UI_PrintStringSmall(line3,  0, 0, 0, 0);  //таймер 
+    UI_PrintStringSmall(line3,  0, 0, 0, 0);
 
     char rssiText[16];
     sprintf(rssiText, "R:%3d", scanInfo.rssi);
@@ -1808,7 +1716,7 @@ static void nextFrequencyinterlaced() {
     scanInfo.f = gScanRangeStart + (currentColumn * jumpSize) + (currentPass * lastStep);
 //char str[64] = "";sprintf(str, "%d\r\n", scanInfo.f );//LogUart(str);
 }
-
+uint32_t f_linear;
 
 static void NextScanStep() {
     spectrumElapsedCount = 0;
@@ -1819,6 +1727,7 @@ static void NextScanStep() {
         if (++scanInfo.i >= scanChannelsCount)
             scanInfo.i = 0;
         scanInfo.f = gMR_ChannelFrequencyAttributes[scanChannel[scanInfo.i]].Frequency;
+        f_linear = scanInfo.f;
     } 
     else {
         if (scanInfo.scanStep < 2500 || scanInfo.scanStep == 1000) {
@@ -1826,6 +1735,7 @@ static void NextScanStep() {
         } else {
             scanInfo.f = gScanRangeStart + (scanInfo.i * scanInfo.scanStep);
         }
+        f_linear = gScanRangeStart + (scanInfo.i * scanInfo.scanStep);
         scanInfo.i++;
     }
 }
@@ -2904,7 +2814,7 @@ MyDrawFrameLines();
     }
     else {
       if (SpectrumMonitor) DrawF(lastReceivingFreq);
-      else DrawF(scanInfo.f);
+      else DrawF(f_linear);
     }
 }
 
@@ -3596,7 +3506,7 @@ static void SaveSettings()
   eepromData.UOO_trigger = UOO_trigger;
   eepromData.osdPopupSetting = osdPopupSetting;
   eepromData.GlitchMax = 10;
-  if (GlitchMax < 30) eepromData.GlitchMax  = GlitchMax;    
+  eepromData.GlitchMax  = GlitchMax;    
   eepromData.SoundBoost = SoundBoost;
   
   for (int i = 0; i < 32; i++) { 
@@ -3661,7 +3571,7 @@ void ClearSettings()
   DelayRssi = 3;
   PttEmission = 2;
   settings.scanStepIndex = S_STEP_10_0kHz;
-  ShowLines = 1; //СТРОКА ПО УМОЛЧАНИЮ
+  ShowLines = 1;
   SpectrumDelay = 0;
   MaxListenTime = 0;
   IndexMaxLT = 0;
