@@ -55,7 +55,7 @@ void UI_DisplayStatus()
 		case 1: // voltage
 		{
 			const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999;
-			sprintf(s, "%u.%02uV", voltage / 100, voltage % 100);
+			sprintf(s, "%u.%1uV", voltage / 100, (voltage % 100) / 10);
 			space_needed = 7 * strlen(s);
 			if (x2 >= space_needed)
 				UI_PrintStringSmallBuffer(s, gStatusLine + x2 - space_needed);
@@ -126,60 +126,60 @@ gStatusLine[POS_FL + 14] |= 0x70;
 	if (gEeprom.KEY_LOCK)
 	{
 	gStatusLine[POS_LOCK + 0] |= 0x00;
-gStatusLine[POS_LOCK + 1] |= 0x00;
-gStatusLine[POS_LOCK + 2] |= 0x00;
-gStatusLine[POS_LOCK + 3] |= 0x00;
-gStatusLine[POS_LOCK + 4] |= 0x00;
-gStatusLine[POS_LOCK + 5] |= 0x00;
-gStatusLine[POS_LOCK + 6] |= 0x00;
-gStatusLine[POS_LOCK + 7] |= 0x00;
-gStatusLine[POS_LOCK + 8] |= 0x7C;
-gStatusLine[POS_LOCK + 9] |= 0x7A;
-gStatusLine[POS_LOCK + 10] |= 0x79;
-gStatusLine[POS_LOCK + 11] |= 0x49;
-gStatusLine[POS_LOCK + 12] |= 0x79;
-gStatusLine[POS_LOCK + 13] |= 0x7A;
-gStatusLine[POS_LOCK + 14] |= 0x7C;
+	gStatusLine[POS_LOCK + 1] |= 0x00;
+	gStatusLine[POS_LOCK + 2] |= 0x00;
+	gStatusLine[POS_LOCK + 3] |= 0x00;
+	gStatusLine[POS_LOCK + 4] |= 0x00;
+	gStatusLine[POS_LOCK + 5] |= 0x00;
+	gStatusLine[POS_LOCK + 6] |= 0x00;
+	gStatusLine[POS_LOCK + 7] |= 0x00;
+	gStatusLine[POS_LOCK + 8] |= 0x7C;
+	gStatusLine[POS_LOCK + 9] |= 0x7A;
+	gStatusLine[POS_LOCK + 10] |= 0x79;
+	gStatusLine[POS_LOCK + 11] |= 0x49;
+	gStatusLine[POS_LOCK + 12] |= 0x79;
+	gStatusLine[POS_LOCK + 13] |= 0x7A;
+	gStatusLine[POS_LOCK + 14] |= 0x7C;
 	}
 
 	// === Индикатор нажатой F-клавиши ===
 	if (gWasFKeyPressed)
 	{
 		gStatusLine[POS_F + 0] |= 0x00;
-gStatusLine[POS_F + 1] |= 0x00;
-gStatusLine[POS_F + 2] |= 0x00;
-gStatusLine[POS_F + 3] |= 0x00;
-gStatusLine[POS_F + 4] |= 0x00;
-gStatusLine[POS_F + 5] |= 0x00;
-gStatusLine[POS_F + 6] |= 0x00;
-gStatusLine[POS_F + 7] |= 0x00;
-gStatusLine[POS_F + 8] |= 0x7F;
-gStatusLine[POS_F + 9] |= 0x41;
-gStatusLine[POS_F + 10] |= 0x75;
-gStatusLine[POS_F + 11] |= 0x75;
-gStatusLine[POS_F + 12] |= 0x75;
-gStatusLine[POS_F + 13] |= 0x7D;
-gStatusLine[POS_F + 14] |= 0x7F;
+		gStatusLine[POS_F + 1] |= 0x00;
+		gStatusLine[POS_F + 2] |= 0x00;
+		gStatusLine[POS_F + 3] |= 0x00;
+		gStatusLine[POS_F + 4] |= 0x00;
+		gStatusLine[POS_F + 5] |= 0x00;
+		gStatusLine[POS_F + 6] |= 0x00;
+		gStatusLine[POS_F + 7] |= 0x00;
+		gStatusLine[POS_F + 8] |= 0x7F;
+		gStatusLine[POS_F + 9] |= 0x41;
+		gStatusLine[POS_F + 10] |= 0x75;
+		gStatusLine[POS_F + 11] |= 0x75;
+		gStatusLine[POS_F + 12] |= 0x75;
+		gStatusLine[POS_F + 13] |= 0x7D;
+		gStatusLine[POS_F + 14] |= 0x7F;
 	}
 
 	// === Индикатор постоянной подсветки "B" ===
 	if (gBacklightAlwaysOn)
 	{
 	gStatusLine[POS_B + 0] |= 0x00;
-gStatusLine[POS_B + 1] |= 0x00;
-gStatusLine[POS_B + 2] |= 0x00;
-gStatusLine[POS_B + 3] |= 0x00;
-gStatusLine[POS_B + 4] |= 0x00;
-gStatusLine[POS_B + 5] |= 0x00;
-gStatusLine[POS_B + 6] |= 0x00;
-gStatusLine[POS_B + 7] |= 0x00;
-gStatusLine[POS_B + 8] |= 0x0C;
-gStatusLine[POS_B + 9] |= 0x12;
-gStatusLine[POS_B + 10] |= 0x65;
-gStatusLine[POS_B + 11] |= 0x79;
-gStatusLine[POS_B + 12] |= 0x65;
-gStatusLine[POS_B + 13] |= 0x12;
-gStatusLine[POS_B + 14] |= 0x0C;
+	gStatusLine[POS_B + 1] |= 0x00;
+	gStatusLine[POS_B + 2] |= 0x00;
+	gStatusLine[POS_B + 3] |= 0x00;
+	gStatusLine[POS_B + 4] |= 0x00;
+	gStatusLine[POS_B + 5] |= 0x00;
+	gStatusLine[POS_B + 6] |= 0x00;
+	gStatusLine[POS_B + 7] |= 0x00;
+	gStatusLine[POS_B + 8] |= 0x0C;
+	gStatusLine[POS_B + 9] |= 0x12;
+	gStatusLine[POS_B + 10] |= 0x65;
+	gStatusLine[POS_B + 11] |= 0x79;
+	gStatusLine[POS_B + 12] |= 0x65;
+	gStatusLine[POS_B + 13] |= 0x12;
+	gStatusLine[POS_B + 14] |= 0x0C;
 	}
 
 
