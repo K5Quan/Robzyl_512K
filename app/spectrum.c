@@ -52,6 +52,7 @@ static uint16_t historyListIndex = 0;
 static uint16_t indexFs = 0;
 static int historyScrollOffset = 0;
 static bool gHistoryScan = false; // Indicateur de scan de l'historique
+static bool gHistorySortLongPressDone = false; //Żeby długie przytrzymanie nie sortowało w pętli co repeat
 
 /////////////////////////////Parameters://///////////////////////////
 //SEE parametersSelectedIndex
@@ -123,6 +124,7 @@ static int bandListScrollOffset = 0;
 static void RenderBandSelect();
 static void ClearHistory();
 static void DrawMeter(int);
+static void SortHistoryByFrequencyAscending(void); //nowe
 static uint8_t scanListSelectedIndex = 0;
 static uint8_t scanListScrollOffset = 0;
 static uint8_t parametersSelectedIndex = 0;
@@ -221,7 +223,7 @@ static void LookupChannelModulation();
   static uint16_t selectedScanListIndex = 0; // Which scanlist we're viewing Channels for
   static void BuildScanListChannels(uint8_t scanListIndex);
   static void RenderScanListChannels();
-  static void RenderScanListChannelsDoubleLines(const char* title, uint8_t numItems, uint8_t selectedIndex, uint8_t scrollOffset);
+ // static void RenderScanListChannelsDoubleLines(const char* title, uint8_t numItems, uint8_t selectedIndex, uint8_t scrollOffset);
 #endif
 
   #define MAX_VALID_SCANLISTS 15
@@ -826,47 +828,65 @@ static void ToggleAudio(bool on) {
   }
 }
 
+static uint16_t CountValidHistoryItems() {
+    return (indexFs > HISTORY_SIZE) ? HISTORY_SIZE : indexFs;
+}
+
 static void FillfreqHistory(void)
 {
     uint32_t f = peak.f;
     if (f == 0 || f < 1400000 || f > 130000000) return;
 
-    for (uint16_t i = 0; i < indexFs; i++) {
+    uint16_t count = CountValidHistoryItems();
+    uint16_t found = HISTORY_SIZE;
+
+    for (uint16_t i = 0; i < count; i++) {
         if (HFreqs[i] == f) {
-            if (lastReceivingFreq != f) HCount[i]++;
-            lastReceivingFreq = f;
-            historyListIndex = i;
-            return;
+            found = i;
+            break;
         }
     }
-    uint16_t pos = 0;
-    while (pos < indexFs && HFreqs[pos] < f) {pos++;}
 
-    uint16_t count = indexFs;
-    if (count > HISTORY_SIZE) count = HISTORY_SIZE;
+    if (found < count) {
+        uint8_t cnt = HCount[found];
+        bool blacklisted = HBlacklisted[found];
 
-    if (count == HISTORY_SIZE && pos >= HISTORY_SIZE) {
-        pos = HISTORY_SIZE - 1;
+        if (lastReceivingFreq != f && cnt < 255) {
+            cnt++;
     }
 
-    uint16_t last = (count == HISTORY_SIZE) ? (HISTORY_SIZE - 1) : count;
-    for (uint16_t i = last; i > pos; i--) {
+        for (uint16_t i = found; i > 0; i--) {
         HFreqs[i]       = HFreqs[i - 1];
         HCount[i]       = HCount[i - 1];
         HBlacklisted[i] = HBlacklisted[i - 1];
     }
 
-    HFreqs[pos]       = f;
-    HCount[pos]       = 1;
-    HBlacklisted[pos] = 0;
-    lastReceivingFreq = f;
-    historyListIndex = pos;
+        HFreqs[0]       = f;
+        HCount[0]       = cnt;
+        HBlacklisted[0] = blacklisted;
+    } else {
+        uint16_t last = (count < HISTORY_SIZE) ? count : (HISTORY_SIZE - 1);
+
+        for (uint16_t i = last; i > 0; i--) {
+            HFreqs[i]       = HFreqs[i - 1];
+            HCount[i]       = HCount[i - 1];
+            HBlacklisted[i] = HBlacklisted[i - 1];
+        }
+
+        HFreqs[0]       = f;
+        HCount[0]       = 1;
+        HBlacklisted[0] = 0;
 
     if (count < HISTORY_SIZE) {
         indexFs = count + 1;
     } else {
         indexFs = HISTORY_SIZE;
     }
+    }
+
+    lastReceivingFreq = f;
+    historyListIndex = 0;
+    historyScrollOffset = 0;
 } 
 
 static void ToggleRX(bool on) {
@@ -1568,6 +1588,38 @@ static void NextScanStep() {
         scanInfo.i++;
 }
 
+static void SortHistoryByFrequencyAscending(void) {
+    uint16_t count = CountValidHistoryItems();
+
+    if (count < 2) {
+        historyListIndex = 0;
+        historyScrollOffset = 0;
+        return;
+    }
+
+    for (uint16_t i = 0; i < count - 1; i++) {
+        for (uint16_t j = i + 1; j < count; j++) {
+            if (HFreqs[j] != 0 && (HFreqs[i] == 0 || HFreqs[j] < HFreqs[i])) {
+                uint32_t tf = HFreqs[i];
+                uint8_t  tc = HCount[i];
+                bool     tb = HBlacklisted[i];
+
+                HFreqs[i] = HFreqs[j];
+                HCount[i] = HCount[j];
+                HBlacklisted[i] = HBlacklisted[j];
+
+                HFreqs[j] = tf;
+                HCount[j] = tc;
+                HBlacklisted[j] = tb;
+            }
+        }
+    }
+
+    historyListIndex = 0;
+    historyScrollOffset = 0;
+    ShowOSDPopup("HISTORY SORTED");  //skrocic?
+}
+
 static void CompactHistory(void) {
     uint16_t w = 0;
     uint16_t limit = (indexFs > HISTORY_SIZE) ? HISTORY_SIZE : indexFs;
@@ -1599,10 +1651,6 @@ static void CompactHistory(void) {
             historyScrollOffset = (indexFs > MAX_VISIBLE_LINES) ? (indexFs - MAX_VISIBLE_LINES) : 0;
         }
     }
-}
-
-static uint16_t CountValidHistoryItems() {
-    return (indexFs > HISTORY_SIZE) ? HISTORY_SIZE : indexFs;
 }
 
 static void Skip() {
@@ -2120,7 +2168,21 @@ static void HandleKeySpectrum(uint8_t key) {
             if (appMode != SCAN_RANGE_MODE) ToggleStepsCount();
             break;
         case KEY_0:
+            if (kbd.counter > 22) {
+                if (!gHistorySortLongPressDone) {
+                    CompactHistory();
+                    SortHistoryByFrequencyAscending();
+
             if (!historyListActive) {
+                        historyListActive   = true;
+                        prevSpectrumMonitor = SpectrumMonitor;
+                    }
+
+                    historyListIndex = 0;
+                    historyScrollOffset = 0;
+                    gHistorySortLongPressDone = true;
+                }
+            } else if (!historyListActive) {
                 CompactHistory();
                 historyListActive   = true;
                 historyListIndex    = 0;
@@ -2700,6 +2762,9 @@ static void HandleUserInput(void) {
     if (kbd.current != KEY_INVALID && kbd.current == kbd.prev) {
         kbd.counter++;
     } else {
+        if (kbd.prev == KEY_0) {
+            gHistorySortLongPressDone = false;
+        }
           kbd.counter = 0;
       }
 
