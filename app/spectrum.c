@@ -161,7 +161,7 @@ static bool newScanStart = true;
 static bool audioState = true;
 static uint8_t bl;
 static State currentState = SPECTRUM, previousState = SPECTRUM;
-static uint8_t Spectrum_state; 
+static uint8_t Spectrum_state = 2; 
 static PeakInfo peak;
 static ScanInfo scanInfo;
 static char latestScanListName[12];
@@ -2920,6 +2920,7 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
 {
     for (;;) {
         Mode mode;
+        appMode = CHANNEL_MODE; LoadActiveScanFrequencies();
         if      (Spectrum_state == 4) mode = FREQUENCY_MODE ;
         else if (Spectrum_state == 3) mode = SCAN_RANGE_MODE ;
         else if (Spectrum_state == 2) mode = SCAN_BAND_MODE ;
@@ -3202,7 +3203,7 @@ void ClearSettings()
   UOO_trigger = 15;
   osdPopupSetting = 500;
   GlitchMax = 20;  
-  Spectrum_state = 1; 
+  Spectrum_state = 2; 
   SoundBoost = 1;  
   settings.bandEnabled[0] = 1;
   BK4819_WriteRegister(BK4819_REG_10, 0x0145);
