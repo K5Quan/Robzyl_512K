@@ -175,7 +175,7 @@ typedef struct SpectrumSettings {
   ModulationMode_t modulationType;
   int scanList;
   bool scanListEnabled[15];
-  bool bandEnabled[32];
+  bool bandEnabled[MAX_BANDS];
 } SpectrumSettings;
 
 typedef struct KeyboardState{

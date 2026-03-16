@@ -3114,7 +3114,7 @@ typedef struct {
     uint8_t DelayRssi;
     uint8_t PttEmission; 
     uint8_t listenBw;
-    uint32_t bandListFlags;            // Bits 0-31: bandEnabled[0..31]
+	uint64_t bandListFlags;            // Bits 0-63: bandEnabled[0..63]
     uint32_t scanListFlags;            // Bits 0-31: scanListEnabled[0..31]
     int16_t Trigger;
     uint32_t RangeStart;
@@ -3166,7 +3166,7 @@ void LoadSettings()
   if (eepromData.RangeStop >= 1400000) gScanRangeStop = eepromData.RangeStop;
   settings.scanStepIndex = eepromData.scanStepIndex;
   for (int i = 0; i < MAX_BANDS; i++) {
-      settings.bandEnabled[i] = (eepromData.bandListFlags >> i) & 0x01;
+    settings.bandEnabled[i] = (eepromData.bandListFlags & ((uint64_t)1 << i)) != 0;
     }
   DelayRssi = eepromData.DelayRssi;
   if (DelayRssi > 12) DelayRssi =12;
@@ -3232,7 +3232,9 @@ static void SaveSettings()
   eepromData.SoundBoost = SoundBoost;
   
   for (int i = 0; i < MAX_BANDS; i++) { 
-      if (settings.bandEnabled[i]) eepromData.bandListFlags |= (1 << i);
+    if (settings.bandEnabled[i]) {
+        eepromData.bandListFlags |= ((uint64_t)1 << i);
+    }
     }
   eepromData.R40 = BK4819_ReadRegister(BK4819_REG_40);
   eepromData.R29 = BK4819_ReadRegister(BK4819_REG_29);
