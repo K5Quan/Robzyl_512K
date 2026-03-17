@@ -91,6 +91,7 @@ static const uint16_t scanStepBWRegValues[] = {
 //     0b0100100001011000, // 6.25
 // };
 
+#define MAX_BANDS 49
 
 typedef enum State {
   SPECTRUM,

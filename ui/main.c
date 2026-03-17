@@ -421,12 +421,12 @@ void UI_DisplayMain(void)
 	}
 
 		
-// ───────────────────── МОЩНОСТЬ (L/M/H) — В НИЖНЕЙ СТРОКЕ, ПОКАЗЫВАЕТСЯ ВСЕГДА, Y ОТДЕЛЬНО ДЛЯ MR/VFO ─────────────────────
+// ───────────────────── power (L/M/H) — В НИЖНЕЙ СТРОКЕ, ПОКАЗЫВАЕТСЯ ВСЕГДА, Y ОТДЕЛЬНО ДЛЯ MR/VFO ─────────────────────
 {
     uint8_t x_mr  = 91;   // MR: X=100 (рядом с полосой BW)
     uint8_t x_vfo = 91;   // VFO: X=100
-    uint8_t y_mr  = line + 5;  // MR: Y=line+5 (нижняя строка)
-    uint8_t y_vfo = line + 5;  // VFO: Y=line+5 (нижняя строка)
+    uint8_t y_mr  = line + 6;  // MR: Y=line+5 (нижняя строка)
+    uint8_t y_vfo = line + 6;  // VFO: Y=line+5 (нижняя строка)
 
     const char pwr[] = "LMH";
     char p = gEeprom.VfoInfo.OUTPUT_POWER < 3 ? pwr[gEeprom.VfoInfo.OUTPUT_POWER] : '?';
@@ -485,8 +485,8 @@ void UI_DisplayMain(void)
 		// Настройки для MR и VFO
 		uint8_t base_x_mr  = 66;   // MR: от какого числа идёт центрирование (можно менять)
 		uint8_t base_x_vfo = 66;   // VFO: от какого числа идёт центрирование (было 105)
-		uint8_t y_mr        = line + 5;
-		uint8_t y_vfo       = line + 5;
+		uint8_t y_mr        = line + 6;
+		uint8_t y_vfo       = line + 6;
 
 		// Формируем строку шага (твой 100% рабочий код — оставляем как есть)
 		char stepStr[8];
@@ -524,8 +524,8 @@ void UI_DisplayMain(void)
 	}
 // ─────────────────────── ШУМОДАВ (U0-U9) ───────────────────────
 	{
-		uint8_t x_mr  = 8;   uint8_t y_mr  = line + 5;   // ← MR:  X=20
-		uint8_t x_vfo = 8;   uint8_t y_vfo = line + 5;   // ← VFO: X=20
+		uint8_t x_mr  = 8;   uint8_t y_mr  = line + 6;   // ← MR:  X=20
+		uint8_t x_vfo = 8;   uint8_t y_vfo = line + 6;   // ← VFO: X=20
 		char sqlStr[6];
 		sprintf(sqlStr, "%u", gEeprom.SQUELCH_LEVEL);
 		uint8_t x = IS_MR_CHANNEL(gEeprom.ScreenChannel) ? x_mr : x_vfo;
@@ -537,8 +537,8 @@ void UI_DisplayMain(void)
 // ───────────────────── ПОЛОСА — полностью разделена по MR/VFO, как шумодав ─────────────────────
 {
     // Настройки для MR и VFO отдельно
-    uint8_t x_mr  = 34;   uint8_t y_mr  = line + 5;   // ← MR: X и Y
-    uint8_t x_vfo = 34;   uint8_t y_vfo = line + 5;   // ← VFO: X и Y
+    uint8_t x_mr  = 34;   uint8_t y_mr  = line + 6;   // ← MR: X и Y
+    uint8_t x_vfo = 34;   uint8_t y_vfo = line + 6;   // ← VFO: X и Y
 
     //const char *bw = bwNames[gEeprom.VfoInfo.CHANNEL_BANDWIDTH];
 	char bwStr[8];

@@ -3,15 +3,15 @@
 // SECTION: Includes
 // ============================================================
 #include "app/spectrum.h"
+#include "app/bands.h"
 #include "scanner.h"
 #include "driver/backlight.h"
 #include "driver/eeprom.h"
-
 #include "ui/helper.h"
 #include "common.h"
 #include "driver/spi.h"
 #include "action.h"
-#include "bands.h"
+
 #include "ui/main.h"
 //#include "debugging.h"
 
@@ -29,8 +29,9 @@
 // ============================================================
 #define MAX_VISIBLE_LINES 6
 #define MR_CHANNELS_LIST 15
-#define NoisLvl 45
-#define NoiseHysteresis 15
+#define NoisLvl 65
+#define NoiseHysteresis 10
+
 
 // ============================================================
 // SECTION: State variables

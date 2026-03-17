@@ -88,21 +88,31 @@ void UI_PrintString(const char *pString, uint8_t Start, uint8_t End, uint8_t Lin
 
 void UI_PrintStringSmall(const char *pString, uint8_t Start, uint8_t End, uint8_t Line, uint8_t background)
 {
+    if (pString == NULL)
+        return;
+
     const size_t Length = strlen(pString);
     const unsigned int char_width  = ARRAY_SIZE(gFontSmall[0]);
     const unsigned int spacing     = 1;
     const unsigned int space_width = 4;
 
-    size_t start_pos = (size_t)Start;
-    size_t end_pos   = (size_t)End;
-
     if (Line >= ARRAY_SIZE(gFrameBuffer))
         return;
 
-    // policz rzeczywistą szerokość tekstu
+    size_t start_pos = (size_t)Start;
+    size_t end_pos   = (size_t)End;
+
+    // Legacy compatibility:
+    // old UI code (main/VFO) uses Start = LCD_WIDTH + x, End = 0
+    // meaning "draw starting at x without centering"
+    const bool legacy_absolute_mode = (End == 0 && Start >= LCD_WIDTH);
+    if (legacy_absolute_mode)
+        start_pos -= LCD_WIDTH;
+
+    // Calculate actual visible text width
     size_t text_width = 0;
     for (size_t i = 0; i < Length; i++) {
-        char c = pString[i];
+        const char c = pString[i];
 
         if (c > ' ') {
             const unsigned int index = (unsigned int)c - ' ' - 1;
@@ -120,27 +130,24 @@ void UI_PrintStringSmall(const char *pString, uint8_t Start, uint8_t End, uint8_
         }
     }
 
-    // centrowanie tylko jeśli End > Start
-    if (end_pos > start_pos) {
-        size_t available = end_pos - start_pos;
+    // Center only when a real [Start..End] range is provided,
+    // not in legacy absolute mode
+    if (!legacy_absolute_mode && end_pos > start_pos) {
+        const size_t available = end_pos - start_pos;
         if (available > text_width)
             start_pos += (available - text_width + 1) / 2;
     }
 
-    if (start_pos >= 128)
+    if (start_pos >= LCD_WIDTH)
         return;
 
-    // ogranicz maksymalny obszar rysowania
-    size_t draw_limit = 128;
-    if (end_pos > start_pos && end_pos < draw_limit)
+    size_t draw_limit = LCD_WIDTH;
+    if (!legacy_absolute_mode && end_pos > start_pos && end_pos < draw_limit)
         draw_limit = end_pos;
-
-    if (draw_limit <= start_pos)
-        return;
 
     uint8_t *line_buf = gFrameBuffer[Line];
 
-    // wypełnij tło tylko pod tekstem
+    // Fill background only under the text area
     if (background) {
         size_t fill_width = text_width;
         if (start_pos + fill_width > draw_limit)
@@ -153,7 +160,7 @@ void UI_PrintStringSmall(const char *pString, uint8_t Start, uint8_t End, uint8_
 
     for (size_t i = 0; i < Length; i++)
     {
-        char c = pString[i];
+        const char c = pString[i];
 
         if (c > ' ')
         {
@@ -173,14 +180,22 @@ void UI_PrintStringSmall(const char *pString, uint8_t Start, uint8_t End, uint8_
                         case 0:
                             memmove(line_buf + cursor_pos, gFontSmall[index], writable);
                             break;
+
                         case 1:
-                            for (size_t c = 0; c < writable; c++)
-                                line_buf[cursor_pos + c] = (uint8_t)~gFontSmall[index][c];
+                            for (size_t j = 0; j < writable; j++)
+                                line_buf[cursor_pos + j] = (uint8_t)~gFontSmall[index][j];
+                            break;
+
+                        default:
+                            memmove(line_buf + cursor_pos, gFontSmall[index], writable);
                             break;
                     }
                 }
 
-                cursor_pos += char_width_used + spacing;
+                cursor_pos += char_width_used;
+
+                if (i + 1 < Length)
+                    cursor_pos += spacing;
             }
         }
         else

@@ -4,7 +4,6 @@
   S_STEP_0_01kHz,  S_STEP_0_1kHz,  S_STEP_0_5kHz,  S_STEP_1_0kHz,  S_STEP_2_5kHz,  S_STEP_5_0kHz,  S_STEP_6_25kHz,
   S_STEP_8_33kHz,  S_STEP_10_0kHz,  S_STEP_12_5kHz,  S_STEP_25_0kHz,  S_STEP_100kHz,  S_STEP_500kHz, */
 
-#define MAX_BANDS 49
 
 #ifdef ENABLE_FULL_BAND
 static const bandparameters BParams[MAX_BANDS] = {
