@@ -1,78 +1,7 @@
-># [**Translate 🌐**](https://translate.google.com/translate?sl=auto&tl=en&u=https://github.com/Robby69400/Robzyl_K5/)
-# Firmware Robzyl pour Quansheng UV-K5 (V1)
-
-### 🙏 Many thanks to Zylka, Kolyan, Iggy, Toni, Yves and Francois
-
-<h2><a href="[https://www.youtube.com/@robby_69400](https://www.youtube.com/@robby_69400)" rel="nofollow">🗲 Youtube</a></h2>
+# Télécharger sur Telegram :
 <h2><a href="[https://t.me/k5robby69](https://t.me/k5robby69)">🗲 Telegram </a></h2>
 
-# **Manuel Robzyl - Firmware Quansheng UV-K5**
-
-## Introduction
-
-Ce firmware, fork de NUNU de NTOIVOLA, est caractérisé par ses multiples fonctions de réception mettant en œuvre l’analyseur de spectre capable de traiter jusqu’à 160 canaux par seconde.
-Actuellement, il ne fonctionne que pour les K5/K6 en V1.
-
-## ⚠️ En cas de problème, vous pouvez utiliser la procédure de restauration en bas.
-
-## ⚠️ Avertissements et responsabilités
-
-**Le domaine de la radio est réglementé, chacun est responsable de l’utilisation qu’il fait de sa radio.**
-
-## Firmware Robzyl – Principales fonctionnalités pour le Quansheng K5 !
-
-🔥 Support des extensions EEPROM : permet de gérer 1000 canaux (nécessite le driver Chirp "512k").
-
-## ⚠️ Attention : n'utiliser la version 512k que si vous avez plus de 8 Ko de mémoire EEPROM !
-
-🔍 Modes de balayage multiples
-Basculez entre les modes de balayage de fréquence, de plage, de bande et de liste – ultra-flexible pour toutes les situations !
-
-🎚️ Sélection automatique de la modulation
-Lors du balayage des bandes ou des listes, la modulation est automatiquement définie (FM/AM/SSB) en fonction des informations du canal ou de la bande enregistrée. Plus besoin de commutation manuelle !
-
-📊 Squelch dynamique
-Le squelch est basé sur la détection de crête et ignore les variations du bruit de fond.
-
-⛔ Fréquences à ignorer
-Évitez les fréquences gênantes ou bruyantes lors des balayages futurs d'une simple pression.
-
-📜 Liste d'historique défilante
-Consultez toutes les fréquences récemment balayées, y compris le nombre de détections ou la durée et les noms des mémoires correspondantes. Revenez facilement à n'importe quelle fréquence !
-Enregistrement en EEPROM si l'extension est disponible.
-Affiche le nom du canal dans l'historique si la fréquence correspond à une mémoire enregistrée.
-
-✅ 15 listes de balayage et 32 bandes – Activez/désactivez visuellement vos bandes/listes, avec des indicateurs en forme d'étoile. Des listes de bandes sont disponibles pour plusieurs pays, mais peuvent être personnalisées sur demande.
-
-📡 Transmission depuis le spectre – Appuyez sur PTT pendant le balayage pour émettre sur la fréquence sélectionnée, puis retour automatique au balayage.
-
-🕒 Réglage DelayRssi – Ajustez la vitesse de balayage en réglant le délai avant la mesure du RSSI.
-Réglage SpectrumDelay – Ajustez le délai avant relance du balayage.
-Réglage MaxListenTime – Ajustez le temps maximum d'écoute avant relance du balayage.
-
-💾 Sauvegarde/Chargement EEPROM – Paramètres de balayage, bandes, niveaux de squelch – tout est sauvegardé et chargé au démarrage.
-
-😎 Mode Ninja : saut de fréquence sur votre K5.
-😜 Bips Mario, Pac-Man, R2D2 et Roger.
-
-## Démarrage
-
-* **Installation du firmware :**
-* Télécharger la dernière version sur le GitHub (lien en fin de doc). Attention aux versions 8k et 512k selon votre EEPROM.
-* Munissez-vous du câble de programmation USB compatible avec le poste.
-* Brancher le poste à l’ordinateur puis démarrer le K5 tout en appuyant sur le bouton PTT.
-* Puis, LED allumée fixe, transférer le firmware vers le K5 via le Flasher en ligne ou K5prog-win (lien en fin de doc).
-* Si vous vous apprêtez à remplacer le firmware d’usine, il est recommandé de sauvegarder préalablement votre configuration et votre calibration à l’aide de K5prog (voir par exemple la vidéo de F5SVP).
-* À chaque montée de version du FW, les paramètres du spectre sont réinitialisés.
-
-
-* **Prise en main rapide :**
-* Les menus cachés : les menus peu utilisés ont été cachés dans une optique de simplification. Pour afficher le menu complet, il suffit de démarrer le poste en pressant 0.
-* La programmation avec Chirp : le driver à utiliser pour dialoguer avec le poste sous Robzyl est à télécharger (lien en fin de doc). Attention à ne pas être en mode spectre pour pouvoir communiquer avec le PC. Attention aux versions 8k et 512k selon votre EEPROM.
-* Restauration du dernier état : suite à l’arrêt du K5, son redémarrage reprend dans le mode actif à son extinction en tenant compte de vos derniers paramètres de spectre sauvegardés.
-* Les principales fonctionnalités propres au firmware Robzyl sont décrites dans la suite de ce document. Pour les fonctions de base du K5, veuillez vous reporter à sa documentation.
-
-
+# Documentation Firmware Robzyl K5 (V1)
 
 ## Les modes VFO et Mémoire
 
@@ -223,37 +152,6 @@ Les SL choisies apparaissent avec un symbole *. Puis faire Exit pour lancer le s
 
 * Fonction : Permet d’analyser en spectre des bandes prédéfinies (ex. PMR, CB, AERO, HAM, etc.).
 * Lancement : Depuis le mode VFO/MR, touche F+6.
-* Utilisation et conseils :
-* Les bandes sont stockées dans un fichier `bands.h` personnalisable avec recompilation du firmware ; il faut me contacter pour cela.
-* Il est possible de paramétrer 32 bandes.
-
-
-
-### Exemple de fichier de configuration
-
-Les fréquences sont définies en 10 Hz (144 MHz s'écrit 14400000).
-Il y a 32 bandes max et le nom fait maximum 12 caractères.
-Les steps sont à choisir parmi : S_STEP_0_01kHz, S_STEP_0_1kHz, S_STEP_0_5kHz, S_STEP_1_0kHz, S_STEP_2_5kHz, S_STEP_5_0kHz, S_STEP_6_25kHz, S_STEP_8_33kHz, S_STEP_10_0kHz, S_STEP_12_5kHz, S_STEP_25_0kHz, S_STEP_100kHz, S_STEP_500kHz.
-Les modulations parmi : MODULATION_FM, MODULATION_AM, MODULATION_SSB.
-
-<img width="741" height="130" alt="bands h" src="https://github.com/user-attachments/assets/dc352144-cb45-4a49-b9cb-8a8375f98935" />
-
-De la même manière qu’en mode SL, il est possible à la 1ère utilisation de paramétrer et sauvegarder la valeur du squelch sur les bandes qui vous intéressent. Touches ^/v pour naviguer dans les bandes.
-
-Ensuite, le menu touche 4 permet de choisir les bandes à analyser de la même manière que le menu en mode SL :
-
-<img width="512" height="320" alt="9-BD sel menu" src="https://github.com/user-attachments/assets/c81a3d8b-eddf-49a7-a8ac-2adae633c6cc" />
-
-## Procédure de restauration (en particulier retour de FAGCI, IJV et KARINA)
-
-* Utiliser l'archive `Rollback.zip`.
-* Commencez par flasher le fichier (`ROLLBACK.bin`) en mode simple.
-* Après le flashage, éteignez la radio, maintenez le bouton 7 enfoncé, puis rallumez-la.
-* Attendez que la mémoire soit effacée.
-* Flashez ensuite le firmware d'origine (`K6 v3.00.19_publish.bin`).
-* Après le flashage, effectuez une réinitialisation complète via le menu.
-* Enfin, flashez le fichier de calibration (`my_calibration.bin`) (allumez la radio en mode simple).
-* Utilisez k5prog.
 
 ## Puissances
 
@@ -262,8 +160,6 @@ Ensuite, le menu touche 4 permet de choisir les bandes à analyser de la même m
 * Mid : puissances situées entre 2 et 3W selon les bandes VHF ou UHF.
 * High : puissance maximale proposée par le matériel, soit en moyenne 5W.
 
-## FAQ
+<h2><a href="[https://www.youtube.com/@robby_69400](https://www.youtube.com/@robby_69400)" rel="nofollow">🗲 Youtube</a></h2>
 
-* Est-il possible de verrouiller son K5 en bande PMR uniquement ? : Oui, affichage menus cachés, menu n°48, valeur PMR446 ONLY.
-* Le firmware est-il compatible avec les mods SI4732 ? : Oui, une version est en cours de développement
-* Le firmware est-il compatible avec les mods EEPROM ? : Oui, 2 versions existent : 8k et 512k pour les K5 modifiés.
+### 🙏 Many thanks to Zylka, Kolyan, Iggy, Toni, Yves and Francois
