@@ -8,18 +8,6 @@
 
 # **Manuel Robzyl - Firmware Quansheng UV-K5**
 
-## 🔥 Nouveautés V6.6 pour K5 V1
-* Correction de l'historique
-* Option sounboost dans menu [5]
-* Spectre entrelacé par steps entre 0,5 kHz et 25 kHz pour améliorer la détection.
-  * exemple pour step de 6.25kHz on balaie 100 000 00, 100 025 00, 100 050 00, 100 075 00, 100 100 00, 100 125 00, 100 150 00, 100 175 00, 100 006 25 step 625 ici, 100 031 25, 100 056 25, 100 081 25...
-* Balayage du spectre toujours en FM.
-* Mode bench : utilisez [8] dans le spectre pour afficher la vitesse en canaux/s.
-* En mode STILL ([M] : réglage du pas avec */F, réglage de la fréquence avec HAUT/BAS ; le verrouillage de la fréquence ou la surveillance avec [SK1] est requis).
-* Auto Lock key dans le spectre [5]
-* Paramètre Glitch dans [5] pour amélirorer la sélectivité de réception en rejetant les parasites
-* Suppresion des click en réception du spectre
-
 ## Introduction
 
 Ce firmware, fork de NUNU de NTOIVOLA, est caractérisé par ses multiples fonctions de réception mettant en œuvre l’analyseur de spectre capable de traiter jusqu’à 160 canaux par seconde.
@@ -66,40 +54,6 @@ Réglage MaxListenTime – Ajustez le temps maximum d'écoute avant relance du b
 
 😎 Mode Ninja : saut de fréquence sur votre K5.
 😜 Bips Mario, Pac-Man, R2D2 et Roger.
-
-
-
-## Nouveautés V6_TURBO
-
-<img width="120" height="120" alt="0-logo v6_turbo" src="https://github.com/user-attachments/assets/1f3a87fc-46a8-4132-a874-d56aa87eb5e7" />
-
-Refonte graphique complète des écrans principaux !
-
-Réallocation des touches dans les écrans VFO/MR :
-
-* Appui long 4/5/6/0 pour régler BANDWIDTH/STEP/POWER/MODULATION.
-* F + 7/8/9 pour lancer le spectre en mode SCANLIST/BANDLIST/FREQUENCE.
-Passage du spectre vers VFO (touche PTT), les valeurs de LNA sont récupérées.
-1000 entrées d'historique pour la version EEPROM 8k.
-Tuning et correctifs divers.
-* Scan des fréquences de l'historique
-* U00 pour enregistrer l'historique non stop
-
-## Nouveautés V5.5.0
-
-Gestion de 1000 canaux avec la version 512k, nécessite un changement d'EEPROM.
-Correction touches.
-La LED verte ne s'allume plus si backlight < 6.
-Affichage AFC (Automatic Frequency Control), permet de vérifier le réglage fin de fréquence.
-Spectrum delay sauvegardé et le son coupé sans signal.
-100 valeurs d'historique / blacklist stockables en EEPROM sur version 512k.
-
-Nouveaux paramètres dans le menu [5] :
-
-* Max Listen Time : temps maximum d'écoute d'une fréquence reçue.
-* RX_Backlight_ON : permet d'activer le rétroéclairage en réception spectre.
-* CLEAR HISTORY : efface l'historique de l'EEPROM (version 512k).
-* FREE RAM : indique la mémoire disponible.
 
 ## Démarrage
 
