@@ -119,7 +119,7 @@ Il existe un mode spécial de scan en valeur U00 (juste avant la valeur U0). Ce 
 ## Spectre sur les ScanLists (mode SL)
 
 * Fonction : Permet de charger dans le spectre les mémoires affectées à des scanlists.
-* Lancement : Depuis le mode VFO/MR, touche F+4.
+* Lancement : Depuis le mode VFO/MR, touche F+7.
 * Utilisation et conseils :
 * Préalablement, les fréquences en mémoires doivent avoir été affectées à une scanlist (ex. SL1 = PMR, SL2 = Répéteurs, SL3 = Aéro, etc.).
 * À la première utilisation, vous pouvez naviguer dans chaque SL (^/v) pour ajuster les paramètres de squelch U, puis mémoriser vos valeurs avec la touche 7.
@@ -140,7 +140,7 @@ Les SL choisies apparaissent avec un symbole *. Puis faire Exit pour lancer le s
 # Spectre sur plage de fréquences (mode FQ) :
 
 * Fonction : Permet d’analyser une gamme de fréquences à partir d’une fréquence centrale ou bien à partir d’une étendue définie.
-* Lancement : Depuis le mode VFO/MR, touche F+5.
+* Lancement : Depuis le mode VFO/MR, touche F+9.
 * Utilisation et conseils :
 * La fréquence issue du VFO/MR est portée au spectre en tant que fréquence centrale. Ensuite, vous pouvez agir sur le paramétrage de votre spectre selon vos besoins en step, modulation, etc. (Réglages touche 5).
 * L’étendue des fréquences basse/haute peut être ajustée dans le menu via les paramètres FStart/FStop. Sur ces paramètres, faire 1 pour accéder à la saisie et M pour valider (touche * pour la virgule).
@@ -151,7 +151,7 @@ Les SL choisies apparaissent avec un symbole *. Puis faire Exit pour lancer le s
 ## Spectre sur les bandes prédéfinies (mode BD)
 
 * Fonction : Permet d’analyser en spectre des bandes prédéfinies (ex. PMR, CB, AERO, HAM, etc.).
-* Lancement : Depuis le mode VFO/MR, touche F+6.
+* Lancement : Depuis le mode VFO/MR, touche F+8.
 
 ## Puissances
 
