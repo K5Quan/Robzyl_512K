@@ -121,11 +121,11 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 			break;
 
 		case KEY_8:
-			APP_RunSpectrum(2);  // F+8 — band scan spectrum
+			APP_RunSpectrum(3);  // F+8 — band scan spectrum
 			break;
 
 		case KEY_9:
-			APP_RunSpectrum(4);  // F+9 — basic spectrum
+			APP_RunSpectrum(0);  // F+9 — basic spectrum
 			break;
 
 		default:
