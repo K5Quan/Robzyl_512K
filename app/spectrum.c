@@ -1,4 +1,4 @@
-//K5 Spectrum KOLYAN
+//K5 Spectrum
 // ============================================================
 // SECTION: Includes
 // ============================================================
@@ -40,20 +40,56 @@ static volatile bool gSpectrumChangeRequested = false;
 static volatile uint8_t gRequestedSpectrumState = 0;
 
 #ifdef ENABLE_EEPROM_512K
-  #define HISTORY_SIZE 200
-#else
   #define HISTORY_SIZE 100
+#else
+  #define HISTORY_SIZE 200
 #endif
 
 static uint8_t cachedValidScanListCount = 0;
 static uint8_t cachedEnabledScanListCount = 0;
 static bool scanListCountsDirty = true;
-
+static uint16_t DATA_R13;                 //ADD KOLYAN
 static uint16_t historyListIndex = 0;
 static uint16_t indexFs = 0;
 static int historyScrollOffset = 0;
 static bool gHistoryScan = false; // Indicateur de scan de l'historique
 static bool gHistorySortLongPressDone = false; //Żeby długie przytrzymanie nie sortowało w pętli co repeat
+///////
+typedef struct {
+    int ShowLines;
+    uint8_t DelayRssi;
+    uint8_t PttEmission; 
+    uint8_t listenBw;
+	uint64_t bandListFlags;            // Bits 0-63: bandEnabled[0..63]
+    uint32_t scanListFlags;            // Bits 0-31: scanListEnabled[0..31]
+    int16_t Trigger;
+    uint32_t RangeStart;
+    uint32_t RangeStop;
+    ScanStep scanStepIndex;
+    uint16_t R40;                      // RF TX Deviation
+    uint16_t R29;                      // AF TX noise compressor, AF TX 0dB compressor, AF TX compression ratio
+    uint16_t R19;                      // Disable MIC AGC
+    uint16_t R73;                      // AFC range select
+    uint16_t R10;
+    uint16_t R11;
+    uint16_t R12;
+    uint16_t R13;
+    uint16_t R14;
+    uint16_t R3C;
+    uint16_t R43;
+    uint16_t R2B;
+    uint16_t SpectrumDelay;
+    uint8_t IndexMaxLT;
+    uint8_t IndexPS;
+    uint8_t Noislvl_OFF;
+    uint16_t UOO_trigger;
+    uint16_t osdPopupSetting;
+    uint8_t GlitchMax;  
+    bool Backlight_On_Rx;
+    bool SoundBoost;  
+} SettingsEEPROM;
+///////
+static SettingsEEPROM eepromData;
 
 /////////////////////////////Parameters://///////////////////////////
 //SEE parametersSelectedIndex
@@ -101,6 +137,7 @@ static const uint16_t PS_Steps[] = {0, 20, 50, 100, 200, 500}; //in 10 ms
 
 
 static uint32_t lastReceivingFreq = 0;
+static bool rx = false;
 static bool gIsPeak = false;
 static bool historyListActive = false;
 static bool gForceModulation = 0;
@@ -546,7 +583,7 @@ static uint16_t GetStepsCount()
    if (appMode==CHANNEL_MODE)    { 
     return scanChannelsCount; }
   if (appMode==SCAN_RANGE_MODE) {
-     return (gScanRangeStop - gScanRangeStart) / scanInfo.scanStep;}
+     return ((gScanRangeStop - gScanRangeStart))+1 / scanInfo.scanStep;} //add +1
   if (appMode==SCAN_BAND_MODE)  {
      return (gScanRangeStop - gScanRangeStart) / scanInfo.scanStep;}
   
@@ -854,11 +891,13 @@ static void FillfreqHistory(bool countHit)
 
     for (uint16_t i = 0; i < indexFs; i++) {
         if (HFreqs[i] == f) {
-            if (lastReceivingFreq != f)
+           // if (lastReceivingFreq != f)
+         if (rx == true) //add
                     HCount[i]++;
             foundIndex = i;
             foundCount = HCount[i];
             foundBlacklisted = HBlacklisted[i];
+            rx = false; //add
             break;
         }
     }
@@ -909,6 +948,7 @@ static void FillfreqHistory(bool countHit)
 }
 
 static void ToggleRX(bool on) {
+   // if (SPECTRUM_PAUSED || settings.rssiTriggerLevelUp == 50) return;
     if (SPECTRUM_PAUSED) return;
     if(!on && SpectrumMonitor == 2) {isListening = 1;return;}
     isListening = on;
@@ -924,18 +964,24 @@ static void ToggleRX(bool on) {
     
     if (on) { 
         Fmax = peak.f;
-         SYSTEM_DelayMs(20);
-RADIO_SetModulation(settings.modulationType);
- BK4819_SetFilterBandwidth(settings.listenBw, false);
- BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_02_CxCSS_TAIL);
- BK4819_WriteRegister(BK4819_REG_37, 0x2D0F); // 0x2D0F defoult. 0x1D0F is ok for me
+        SYSTEM_DelayMs(20);
+        RADIO_SetModulation(settings.modulationType);
+        BK4819_SetFilterBandwidth(settings.listenBw, false);
+        BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_02_CxCSS_TAIL);
+        BK4819_WriteRegister(BK4819_REG_37, 0x0A0F); //F defoult = 0x1D0F. 0x0D0F=is ok for me
+        scanListCountsDirty = false;
+        rx = true;
         SPI0_Init(64);
     } else { 
+        rx = false;
+      //BK4819_WriteRegister(BK4819_REG_13, eepromData.R13); 
+      BK4819_WriteRegister(BK4819_REG_13, DATA_R13); 
+       // BK4819_WriteRegister(BK4819_REG_13, 0x3DF);
         RADIO_SetModulation(MODULATION_FM); //Test for Kolyan OK
         BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE,false); //Scan in 25K bandwidth
-        // if(appMode!=CHANNEL_MODE) BK4819_WriteRegister(0x43, GetBWRegValueForScan());
-         BK4819_WriteRegister(BK4819_REG_37, 0x100F);  //Test for Kolyan
-          BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, 0);
+    //  if(appMode!=CHANNEL_MODE) BK4819_WriteRegister(0x43, GetBWRegValueForScan());
+        BK4819_WriteRegister(BK4819_REG_37, 0x0A0F);  //Test for Kolyan
+        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, 0);
         SPI0_Init(2);
     }
     if (on != audioState) {
@@ -943,9 +989,7 @@ RADIO_SetModulation(settings.modulationType);
         ToggleAFDAC(on);
         ToggleAFBit(on);
     }
-    
 }
-
 
 static void ResetScanStats() {
   scanInfo.rssiMax = scanInfo.rssiMin + 20 ; 
@@ -1037,6 +1081,9 @@ static void UpdateGlitch() {
     else {gIsPeak = true;}// if glitch is too high, receiving stopped
 }
 
+//ADD
+bool interlacing = 1;
+
 static void Measure() {
     uint16_t j;    
     uint16_t startIndex;
@@ -1051,24 +1098,29 @@ static void Measure() {
         gIsPeak      = false;
         isFirst      = false;
     }
-    if (settings.rssiTriggerLevelUp == 50 && rssi > previousRssi + UOO_trigger) {
-      peak.f = scanInfo.f;
-      peak.i = scanInfo.i;
-      FillfreqHistory(false);
-    }
-
-    if (!gIsPeak && rssi > previousRssi + settings.rssiTriggerLevelUp) {
-        SYSTEM_DelayMs(10);
-        
-        uint16_t rssi2 = scanInfo.rssi = GetRssi();
-        if (rssi2 > rssi+10) {
-          peak.f = scanInfo.f;
-          peak.i = scanInfo.i;
+     if (settings.rssiTriggerLevelUp == 50) {
+        if  (rssi > previousRssi + UOO_trigger)  {
+            peak.f = scanInfo.f;
+            peak.i = scanInfo.i;
+            gIsPeak = false;
+            isListening = false;
+            FillfreqHistory(false);
         }
-        if (settings.rssiTriggerLevelUp < 50) {gIsPeak = true;}
-        UpdateNoiseOff();
-        UpdateGlitch();
-
+    } else {
+            if (!gIsPeak && rssi > previousRssi + settings.rssiTriggerLevelUp) {
+              SYSTEM_DelayMs(10);
+                uint16_t rssi2 = scanInfo.rssi = GetRssi();
+                if (rssi2 > rssi+10) {
+                    peak.f = scanInfo.f;
+                  //  peak.i = scanInfo.i-1;
+ peak.i = (scanInfo.i > 0) ? scanInfo.i - 1 : 0; //add
+                if (settings.rssiTriggerLevelUp < 50) {
+                    gIsPeak = true;
+                    UpdateNoiseOff();
+                    UpdateGlitch();
+                }}  
+            scanInfo.rssi = GetRssi();
+            }
     } 
     if (!gIsPeak || !isListening)
         previousRssi = rssi;
@@ -1081,14 +1133,33 @@ static void Measure() {
     uint16_t i = scanInfo.i;
     if (i >= count) i = count - 1;
 
-    if (count > 128) {
-        uint16_t pixel = (uint32_t) i * 128 / count;
-        if (pixel >= 128) pixel = 127;
-        rssiHistory[pixel] = rssi;
-        if(++pixel < 128) rssiHistory[pixel] = 0; //2 blank pixels
-        if(++pixel < 128) rssiHistory[pixel] = 0;
-        
-    } else {
+  
+static uint8_t pixel;
+static uint16_t lastPixel = 255;
+
+    if (interlacing && count > 128) {
+        uint32_t diff = (scanInfo.f - gScanRangeStart) / 100;
+        uint32_t span = (gScanRangeStop - gScanRangeStart) / 100;
+        if (span > 0) {
+            pixel = (diff * 127) / span;
+            if (pixel < 128) {
+                rssiHistory[pixel] = rssi;
+            }
+        }
+    }
+
+    if (!interlacing && count > 128) {
+        pixel = ((uint32_t)i * 127) / count;
+        if (pixel != lastPixel) {
+            rssiHistory[pixel] = rssi;
+            lastPixel = pixel;
+        } else if (rssi > rssiHistory[pixel]) {
+            rssiHistory[pixel] = rssi;
+        }
+    }
+    if (count <= 128) {
+
+    //ADD
           uint16_t base = 128 / count;
           uint16_t rem  = 128 % count;
           startIndex = i * base + (i < rem ? i : rem);
@@ -1111,11 +1182,15 @@ sprintf(str,"%d %d %d \r\n", startIndex, j-2, rssiHistory[j-2]);
 /////////////////////////DEBUG//////////////////////////  
 }
 
-static void UpdateDBMaxAuto() { //Zoom
+ static void UpdateDBMaxAuto() { //Zoom
+  //  settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -80, 0);
+  //  settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -170, -130);} 
+
+
   static uint8_t z = 5;
   int newDbMax;
     if (scanInfo.rssiMax > 0) {
-        newDbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -80, 0);
+        newDbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -70, 0);
         newDbMax = Rssi2DBm(scanInfo.rssiMax);
 
         if (newDbMax > settings.dbMax + z) {
@@ -1127,8 +1202,8 @@ static void UpdateDBMaxAuto() { //Zoom
         }
     }
 
-    if (scanInfo.rssiMin > 0) {
-        settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -120);
+    if (scanInfo.rssiMin > 0) { 
+        settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -170, -130);
         settings.dbMin = Rssi2DBm(scanInfo.rssiMin);
     }
 }
@@ -1412,20 +1487,20 @@ static void FormatLastReceived(char *buf, size_t buflen) {
 }
 // ------------------ CSS detection ------------------
 static void UpdateCssDetection(void) {
+BK4819_CssScanResult_t scanResult = BK4819_GetCxCSSScanResult(&cdcssFreq, &ctcssFreq);
     // Проверяем только когда есть приём сигнала
-    if (!isListening && !gIsPeak) {
-        StringCode[0] = '\0';  // очищаем, если нет сигнала
-        return;
-    }
+   if (!isListening ) {
+             return;
+   }
 
     // Включаем CxCSS детектор
     BK4819_WriteRegister(BK4819_REG_51,
         BK4819_REG_51_ENABLE_CxCSS |
         BK4819_REG_51_AUTO_CDCSS_BW_ENABLE |
-        BK4819_REG_51_AUTO_CTCSS_BW_ENABLE |
-        (51u << BK4819_REG_51_SHIFT_CxCSS_TX_GAIN1));
+        BK4819_REG_51_AUTO_CTCSS_BW_ENABLE|
+       (51u << BK4819_REG_51_SHIFT_CxCSS_TX_GAIN1));
 
-    BK4819_CssScanResult_t scanResult = BK4819_GetCxCSSScanResult(&cdcssFreq, &ctcssFreq);
+    
 
     if (scanResult == BK4819_CSS_RESULT_CDCSS) {
         uint8_t code = DCS_GetCdcssCode(cdcssFreq);
@@ -1454,9 +1529,7 @@ static void DrawF(uint32_t f) {
     } else {
         snprintf(freqStr, sizeof(freqStr), "%u.%01u", f / 100000, (f % 100000) / 10000);
     }
-   
-   
-   
+  
     char line1[19] = "";
     char line1b[19] = "";
     char line2[19] = "";
@@ -1464,13 +1537,15 @@ static void DrawF(uint32_t f) {
     sprintf(line1, "%s", freqStr);
     sprintf(line1b, "%s %s", freqStr, StringCode);
     
-    if (gNextTimeslice_1s) {
+    
+    if (gNextTimeslice_1s) {    
+        if (isListening){  
+       UpdateCssDetection(); // субтон новый      
        uint16_t channelFd = BOARD_gMR_fetchChannel(f);  
-        isKnownChannel = (channelFd != 0xFFFF);
-         UpdateCssDetection(); // субтон новый
+        isKnownChannel = (channelFd != 0xFFFF);   
         ReadChannelName(channelFd, channelName);
         gNextTimeslice_1s = 0;
-    }
+    }}
     char prefix[9] = "";
     if (appMode == SCAN_BAND_MODE) {
         snprintf(prefix, sizeof(prefix), "B%u ", bl + 1);
@@ -1493,6 +1568,7 @@ static void DrawF(uint32_t f) {
     line3[0] = '\0';
     int pos = 0;
 
+ 
 
     
 
@@ -1509,12 +1585,10 @@ static void DrawF(uint32_t f) {
             pos += sprintf(&line3[pos], " Wait %ds", WaitSpectrum / 1000);
         }}
 
-      //  ArrowLine = 3;
-     
-     
-     
-    char fullLine[20]; // Создаем новый массив. Объединяем line1b и line2 в fullLine
-            sprintf(fullLine, " %s %s", line2, StringCode); 
+      
+      char fullLine[20]; 
+     sprintf(fullLine, " %s %s", line2, StringCode); 
+    
    
     if (classic) {
     if (ShowLines == 2) {
@@ -1530,33 +1604,24 @@ static void DrawF(uint32_t f) {
             }
 
     if (ShowLines == 1) {
-                UI_PrintStringSmall(line1b, 1, LCD_WIDTH - 1, 0, 0);  // F + CSS
-                UI_PrintStringSmall(line2,  1, LCD_WIDTH - 1, 1, 0);  // SL or BD + Name
+                UI_PrintStringSmall(line1, 1, LCD_WIDTH - 1, 0, 0);  // F + CSS
+                UI_PrintStringSmall(fullLine,  1, LCD_WIDTH - 1, 1, 0);  // SL or BD + Name
                 UI_PrintStringSmall(line3,0, LCD_WIDTH - 1, 2, 0);  // таймеры
              // GUI_DisplaySmallestDark	(">", 8, 17, false, false);
              // GUI_DisplaySmallestDark	("<", 118, 17, false, false);   
                 ArrowLine = 3;
             }
 
-    if (ShowLines == 3) {
-                static char lastDetectedCSS[8] = ""; 
-          // Если в StringCode что-то есть (длина больше 0), копируем в память
-    if (StringCode[0] != '\0') {
-               strncpy(lastDetectedCSS, StringCode, sizeof(lastDetectedCSS) - 1);
-               lastDetectedCSS[sizeof(lastDetectedCSS) - 1] = '\0';
-  /*
-                if (lastReceivingFreq != f){
-              lastDetectedCSS[0] = '\0';}            */
-
-}
-              char lastRx[19] = " ";
+    if (ShowLines == 3) { // last rx mode
+      
+              char lastRx[19] = "";
               char lastRxFreq[19] = "---";
               char lastRxtone[19] ;
              // static uint8_t stringc = StringCode;
               FormatLastReceived(lastRx, sizeof(lastRx));
     if (lastReceivingFreq >= 1400000 && lastReceivingFreq <= 130000000) {
                 FormatFrequency(lastReceivingFreq, lastRxFreq, sizeof(lastRxFreq));
-                sprintf(lastRxtone, "%s  %s", lastRx, lastDetectedCSS);
+                sprintf(lastRxtone, "%s  %s", lastRx, StringCode);
               }
               UI_PrintStringSmall(lastRxFreq, 1, LCD_WIDTH - 1, 0, 0);
               UI_PrintStringSmall(lastRxtone, 1, LCD_WIDTH - 1, 1, 0);
@@ -1629,7 +1694,7 @@ static void LookupChannelModulation() {
 }
 
 static void UpdateScanListCountsCached(void) {
-    if (!scanListCountsDirty) return;
+    if (!scanListCountsDirty) return; 
 
     BuildValidScanListIndices();
     cachedValidScanListCount = validScanListCount;
@@ -1654,7 +1719,7 @@ if (appMode==CHANNEL_MODE)
       ? cachedValidScanListCount
       : cachedEnabledScanListCount;
 
-  sprintf(String, "SL:%u/%u", displayEnabled, cachedValidScanListCount);
+  sprintf(String, "SL %u/%u", displayEnabled, cachedValidScanListCount);
   GUI_DisplaySmallest(String, 2, Bottom_print, false, true);
 
   sprintf(String, "CH:%u", scanChannelsCount);
@@ -1739,25 +1804,27 @@ uint32_t f_linear;
 
 
 static void NextScanStep() {
-   //  uint32_t f_linear; 
+    static uint32_t StartF; // Статическая переменная для хранения начала текущего прохода
     spectrumElapsedCount = 0;
+
     if (appMode == CHANNEL_MODE) { 
         if (scanChannelsCount == 0) return;
-        if (++scanInfo.i >= scanChannelsCount)
+        // Увеличиваем индекс канала (только один раз!)
+        if (++scanInfo.i >= scanChannelsCount) {
             scanInfo.i = 0;
+        }
         scanInfo.f = gMR_ChannelFrequencyAttributes[scanChannel[scanInfo.i]].Frequency;
-       // f_linear = scanInfo.f;
-    } else {
-      
-            static uint32_t StartF;
+    } 
+    else { // Режим VFO с Interlacing
+        
             if (scanInfo.i == 0) scanInfo.f = StartF = gScanRangeStart;
             if (scanInfo.f < gScanRangeStop) scanInfo.f += jumpSizes[settings.scanStepIndex];
             else {StartF += scanInfo.scanStep;
                 scanInfo.f = StartF;
-             } }
+                }
             
     if(++scanInfo.i > GetStepsCount()) scanInfo.i = 0;
-}
+}}
 
 
 // */
@@ -1868,6 +1935,7 @@ void NextAppMode(void) {
         SpectrumPauseCount = 0;
         newScanStart = true;
         ToggleRX(false);
+        
 }
 
 
@@ -1934,9 +2002,9 @@ static void HandleKeyBandList(uint8_t key) {
             break;
         case KEY_EXIT:
             SpectrumMonitor = 0;
+            gForceModulation = 0; // KOLYAN ADD
             SetState(SPECTRUM);
             RelaunchScan();
-            gForceModulation = 0; // KOLYAN ADD
             break;
         default:
             break;
@@ -1962,7 +2030,7 @@ static void HandleKeyScanList(uint8_t key) {
                     scanListScrollOffset = scanListSelectedIndex - MAX_VISIBLE_LINES + 1;
             } else {
                 scanListSelectedIndex = 0;
-            }
+        }
             break;
 #ifdef ENABLE_SCANLIST_SHOW_DETAIL
         case KEY_STAR: /* drill-down into channel list for selected scanlist */
@@ -1984,16 +2052,20 @@ static void HandleKeyScanList(uint8_t key) {
         case KEY_MENU: /* activate selected list and start scanning */
             if (scanListSelectedIndex < MR_CHANNELS_LIST) {
                 ToggleScanList(validScanListIndices[scanListSelectedIndex], 1);
+                scanListCountsDirty = true;//TEST KOLYAN
                 SetState(SPECTRUM);
-                ResetModifiers();
                 gForceModulation = 0; //1 kolyan
+                ResetModifiers();
+                RelaunchScan();
             }
             break;
         case KEY_EXIT:
+        scanListCountsDirty = true;//TEST KOLYAN
             SpectrumMonitor = 0;
             SetState(SPECTRUM);
-            ResetModifiers();
             gForceModulation = 0; //1 kolyan
+            ResetModifiers();
+            RelaunchScan();
             break;
         default:
             break;
@@ -2054,10 +2126,10 @@ static void HandleKeyParameters(uint8_t key) {
             switch (parametersSelectedIndex) {
                 case 0: /* RSSI Delay */
                     DelayRssi = isKey3 ?
-                                (DelayRssi >= 6 ? 1  : DelayRssi + 1) :
-                                (DelayRssi <= 1  ? 6 : DelayRssi - 1);
+                                (DelayRssi >= 5 ? 1  : DelayRssi + 1) :
+                                (DelayRssi <= 1  ? 5 : DelayRssi - 1);
                     {
-                        static const int rssiMap[] = {2, 8, 12, 17, 22};
+                        static const int rssiMap[] = {2, 8, 10, 12, 15};
                         settings.rssiTriggerLevelUp =
                             (DelayRssi >= 1 && DelayRssi <= 5) ? rssiMap[DelayRssi - 1] : 25;
                     }
@@ -2110,8 +2182,8 @@ static void HandleKeyParameters(uint8_t key) {
                     break;
                 case 10: /* Noise level OFF */
                     Noislvl_OFF = isKey3 ?
-                                  (Noislvl_OFF >= 80 ? 30  : Noislvl_OFF + 1) :
-                                  (Noislvl_OFF <= 30  ? 80 : Noislvl_OFF - 1);
+                                  (Noislvl_OFF >= 90 ? 30  : Noislvl_OFF + 1) :
+                                  (Noislvl_OFF <= 30  ? 90 : Noislvl_OFF - 1);
                     Noislvl_ON = NoisLvl - NoiseHysteresis;
                     break;
                 case 11: /* OSD popup duration */
@@ -2131,7 +2203,7 @@ static void HandleKeyParameters(uint8_t key) {
                     gKeylockCountdown = durations[AUTO_KEYLOCK];
                     break;
                 case 14: /* Glitch max */
-                    if (isKey3) { if (GlitchMax < 50) GlitchMax += 5; }
+                    if (isKey3) { if (GlitchMax < 60) GlitchMax += 5; }
                     else        { if (GlitchMax > 5) GlitchMax -= 5; }
                     break;
                 case 15: /* Sound boost */
@@ -2152,12 +2224,13 @@ static void HandleKeyParameters(uint8_t key) {
             break;
         }
         case KEY_7:
+        EEPROM_WriteBuffer(0x1D00, &Spectrum_state); //add
             SaveSettings();
             break;
         case KEY_EXIT:
             SetState(SPECTRUM);
-            RelaunchScan();
             ResetModifiers();
+            RelaunchScan();
             if (Key_1_pressed) APP_RunSpectrum(3);
             break;
         default:
@@ -2188,15 +2261,12 @@ static void HandleKeySpectrum(uint8_t key) {
             if (gHistoryScan) { gIsPeak = false; SpectrumMonitor = 0; }
         } else {
             SetState(PARAMETERS_SELECT);
-             if (Backlight_On_Rx==1) {
-    parametersStateInitialized = false; // Force reinitialization of parameters state when entering from spectrum
-        parametersSelectedIndex = 0;
-        parametersScrollOffset = 0;
-    } else {
-        parametersStateInitialized = true;
-    return;
-    
+            if (!parametersStateInitialized) {
+                parametersSelectedIndex = 0;
+                parametersScrollOffset = 0;
+                parametersStateInitialized = true;
             }
+            return;
         }}
 
     switch (key) {
@@ -2230,6 +2300,7 @@ static void HandleKeySpectrum(uint8_t key) {
             break;
         case KEY_9: {
             ToggleModulation();
+            BK4819_WriteRegister(BK4819_REG_13, eepromData.R13); //ADD KOLYAN
             char modText[32];
             sprintf(modText, "MOD: %s", gModulationStr[settings.modulationType]);
             ShowOSDPopup(modText);
@@ -2245,6 +2316,7 @@ static void HandleKeySpectrum(uint8_t key) {
                 WriteHistory();
 #endif
             } else {
+                EEPROM_WriteBuffer(0x1D00, &Spectrum_state); //add
                 SaveSettings();
             }
             break;
@@ -2385,7 +2457,8 @@ RelaunchScan();
             break;
   
      case KEY_6: // next mode
-        NextAppMode();
+        NextAppMode(); 
+      
             break;
         case KEY_SIDE1:
             if (SPECTRUM_PAUSED) return;
@@ -2457,9 +2530,9 @@ RelaunchScan();
 // ============================================================
 
 static void OnKeyDown(uint8_t key) {
-    if (!gBacklightCountdown) { BACKLIGHT_TurnOn(); return; }
-    BACKLIGHT_TurnOn();
-
+   /* if (!gBacklightCountdown && !gBacklightAlwaysOn && !backlightOn ) { BACKLIGHT_TurnOn(); return; }
+    BACKLIGHT_TurnOn(); */
+ if (!backlightOn) {BACKLIGHT_TurnOn();}
     /* Key-lock guard: only KEY_F unlocks */
     if (gIsKeylocked) {
         if (key == KEY_F) {
@@ -2530,16 +2603,16 @@ static void OnKeyDownFreqInput(uint8_t key) {
 }
 
 static int16_t storedScanStepIndex = -1;
-
+/////////// REGISTERS WINDOW
 static void OnKeyDownStill(KEY_Code_t key) {
   BACKLIGHT_TurnOn();
   switch (key) {
       case KEY_3:
          ToggleListeningBW(1);
       break;
-     
       case KEY_9:
         ToggleModulation();
+        BK4819_WriteRegister(BK4819_REG_13, eepromData.R13); //ADD KOLYAN
       break;
 case KEY_UP:
     if (stillEditRegs) {
@@ -2588,9 +2661,19 @@ case KEY_DOWN:
       case KEY_5:
       case KEY_0:
       case KEY_6:
-      case KEY_7:
+     // case KEY_7:
       break;
-          
+
+//ADD KOLYAN
+      case KEY_7:
+       if (SpectrumMonitor == 2) {
+            SaveSettings();    
+            SYSTEM_DelayMs(500);
+            SettingsLoaded = false;
+            LoadSettings();}
+            break;
+ //ADD KOLYAN
+        
 case KEY_SIDE1:
     SpectrumMonitor++;
     if (SpectrumMonitor > 2) SpectrumMonitor = 0;
@@ -2855,7 +2938,7 @@ static void RenderStill() {
   classic=1;
   char freqStr[18];
   // if (SpectrumMonitor) FormatFrequency(HFreqs[historyListIndex], freqStr, sizeof(freqStr)); // test
-  // else  //test
+  // else  //test Kolyan
   FormatFrequency(stillFreq, freqStr, sizeof(freqStr));
   UI_DisplayFrequency(freqStr, 0, 0, 0);
   DrawMeter(2);
@@ -3171,7 +3254,7 @@ static void Tick() {
   if (!isListening) {UpdateScan();}
   
   if (gNextTimeslice_display) {
-   // if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); // Kolyan test
+    if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); // Kolyan test
     gNextTimeslice_display = 0;
     latestScanListName[0] = '\0';
     RenderStatus();
@@ -3181,24 +3264,26 @@ static void Tick() {
 
 
 void APP_RunSpectrum(uint8_t Spectrum_state)
-{
+{LoadSettings();
     for (;;) {
         Mode mode;
-        appMode = CHANNEL_MODE; LoadValidMemoryChannels();
-        if      (Spectrum_state == 4) mode = FREQUENCY_MODE ;
+        appMode = CHANNEL_MODE; LoadValidMemoryChannels(); //test off kolyan
+        if      (Spectrum_state == 0) mode = FREQUENCY_MODE ;
         else if (Spectrum_state == 3) mode = SCAN_RANGE_MODE ;
         else if (Spectrum_state == 2) mode = SCAN_BAND_MODE ;
         else if (Spectrum_state == 1) mode = CHANNEL_MODE ;
         else mode = FREQUENCY_MODE;
-        //BK4819_SetFilterBandwidth(BK4819_FILTER_BW_NARROW, false);  // принудительно узкий в спектре ЧИНИМ ВФО
-        EEPROM_WriteBuffer(0x1D00, &Spectrum_state);
+      //SYSTEM_DelayMs(100);
+       // EEPROM_WriteBuffer(0x1D00, &Spectrum_state);
         if (!Key_1_pressed) LoadSettings();
         appMode = mode;
         ResetModifiers();
+        if (appMode==CHANNEL_MODE) LoadValidMemoryChannels(); //test on
         if (appMode==FREQUENCY_MODE && !Key_1_pressed) {
             currentFreq = gTxVfo->pRX->Frequency;
             gScanRangeStart = currentFreq - (GetBW() >> 1);
             gScanRangeStop  = currentFreq + (GetBW() >> 1);
+            
         }
         Key_1_pressed = 0;
         BackupRegisters();
@@ -3225,9 +3310,10 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
             RestoreRegisters();
             break;
         }
-
+        
         break;
     } 
+    
 }
 
 static void LoadValidMemoryChannels(void)
@@ -3305,47 +3391,15 @@ bool IsVersionMatching(void) {
 }
 
 
-typedef struct {
-    int ShowLines;
-    uint8_t DelayRssi;
-    uint8_t PttEmission; 
-    uint8_t listenBw;
-	uint64_t bandListFlags;            // Bits 0-63: bandEnabled[0..63]
-    uint32_t scanListFlags;            // Bits 0-31: scanListEnabled[0..31]
-    int16_t Trigger;
-    uint32_t RangeStart;
-    uint32_t RangeStop;
-    ScanStep scanStepIndex;
-    uint16_t R40;                      // RF TX Deviation
-    uint16_t R29;                      // AF TX noise compressor, AF TX 0dB compressor, AF TX compression ratio
-    uint16_t R19;                      // Disable MIC AGC
-    uint16_t R73;                      // AFC range select
-    uint16_t R10;
-    uint16_t R11;
-    uint16_t R12;
-    uint16_t R13;
-    uint16_t R14;
-    uint16_t R3C;
-    uint16_t R43;
-    uint16_t R2B;
-    uint16_t SpectrumDelay;
-    uint8_t IndexMaxLT;
-    uint8_t IndexPS;
-    uint8_t Noislvl_OFF;
-    uint16_t UOO_trigger;
-    uint16_t osdPopupSetting;
-    uint8_t GlitchMax;  
-    bool Backlight_On_Rx;
-    bool SoundBoost;  
-} SettingsEEPROM;
+
 
 
 void LoadSettings()
 {
   if(SettingsLoaded) return;
-  SettingsEEPROM  eepromData  = {0};
+  // SettingsEEPROM  eepromData  = {0};
   EEPROM_ReadBuffer(0x1D10, &eepromData, sizeof(eepromData));
-  
+  (DATA_R13=eepromData.R13); //ADD KOLYAN
   BK4819_WriteRegister(BK4819_REG_10, eepromData.R10);
   BK4819_WriteRegister(BK4819_REG_11, eepromData.R11);
   BK4819_WriteRegister(BK4819_REG_12, eepromData.R12);
@@ -3365,7 +3419,7 @@ void LoadSettings()
     settings.bandEnabled[i] = (eepromData.bandListFlags & ((uint64_t)1 << i)) != 0;
     }
   DelayRssi = eepromData.DelayRssi;
-  if (DelayRssi > 6) DelayRssi =6;
+  if (DelayRssi > 5) DelayRssi =5;
   PttEmission = eepromData.PttEmission;
   validScanListCount = 0;
   ShowLines = eepromData.ShowLines;
@@ -3493,7 +3547,7 @@ void ClearSettings()
   BK4819_WriteRegister(BK4819_REG_10, 0x0145);
   BK4819_WriteRegister(BK4819_REG_11, 0x01B5);
   BK4819_WriteRegister(BK4819_REG_12, 0x0393);
-  BK4819_WriteRegister(BK4819_REG_13, 0x03BE);
+  BK4819_WriteRegister(BK4819_REG_13, 0x03DF); //TEST KOLYAN DEF = 0x03BE //0x03DF
   BK4819_WriteRegister(BK4819_REG_14, 0x0019);
   BK4819_WriteRegister(BK4819_REG_40, 13520);
   BK4819_WriteRegister(BK4819_REG_29, 43840);
@@ -3505,6 +3559,10 @@ void ClearSettings()
   
   ShowOSDPopup("DEFAULT SETTINGS");
   SaveSettings();
+SYSTEM_DelayMs(500); // ADD KOLYAN
+            SettingsLoaded = false;
+            LoadSettings();
+
 }
 
 // ============================================================

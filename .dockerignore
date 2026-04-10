@@ -1,0 +1,7 @@
+version.txt
+compiled-firmware/
+*.bin
+*.map
+*.d
+*.o
+.git/
