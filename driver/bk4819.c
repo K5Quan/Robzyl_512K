@@ -77,7 +77,7 @@ void BK4819_Init(void)
 	BK4819_WriteRegister(BK4819_REG_00, 0x8000);
 	BK4819_WriteRegister(BK4819_REG_00, 0x0000);
 	
-	BK4819_WriteRegister(BK4819_REG_37, 0x1D0F); //0001110100001111
+	BK4819_WriteRegister(BK4819_REG_37, 0x0D0F); //0001110100001111 TEST DEFOULT 0x1D0F
 	BK4819_WriteRegister(BK4819_REG_36, 0x0022);
 	BK4819_WriteRegister(BK4819_REG_13, 0x03BE); //TEST KAMILS //BK4819_SetDefaultAmplifierSettings();
 
@@ -117,7 +117,7 @@ void BK4819_Init(void)
 
 	BK4819_WriteRegister(BK4819_REG_33, 0x9000);
 	BK4819_WriteRegister(BK4819_REG_3F, 0);
-	//TEST KAMILS BK4819_WriteRegister(BK4819_REG_73, 0x4692);
+	BK4819_WriteRegister(BK4819_REG_73, 0x4692); //TEST KAMILS
 
 	SYSTEM_DelayMs(50);  // Delay 50ms after init to wake up BK4819 ЧИНИМ ПРИЕМ ПОСЛЕ ВКЛЮЧЕНИЯ
 	BK4819_RX_TurnOn();  // Force RX on
@@ -264,32 +264,46 @@ void BK4819_SetAGC(bool enable)
 
 void BK4819_InitAGC(ModulationMode_t modulation)
 {
-	if(modulation==MODULATION_AM)
-	{
-		//AM modulation
-		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (20 << 0));
-	
-	} else {
-		//FM, USB modulation
-		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
-		}
-	
-	BK4819_WriteRegister(BK4819_REG_7B, 0x8420); //Test 4.15
-	BK4819_WriteRegister(BK4819_REG_24, 0); //Test Disable DTMF
+	if (modulation == MODULATION_AM) {
+        BK4819_WriteRegister(0x13, 0x396);
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (49 << 7) | (20 << 0));
+    } 
+    else if (modulation == MODULATION_SSB) {
+        BK4819_WriteRegister(0x13, 0x396);
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (49 << 7) | (10 << 0));
+    } 
+    else { // FM и остальные
+        BK4819_WriteRegister(0x13, 0x3DF);
+        // Здесь пороги выше (84 и 66), чтобы FM спектр был чище
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
+    }
+
+    // Общие настройки для всех режимов
+    BK4819_WriteRegister(BK4819_REG_7B, 0x8420); 
+    BK4819_WriteRegister(BK4819_REG_24, 0); // Отключаем DTMF, чтобы не мешал спектру
 }
 
-void BK4819_InitAGCSpectrum(ModulationMode_t modulation)
-{
-	if(modulation==MODULATION_AM)
-		{
-		//AM modulation
-		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (20 << 0));
-		} else {
-		//FM, USB modulation
-		BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
-		}
-	BK4819_WriteRegister(BK4819_REG_7B, 0x8420); //Test 4.15
+void BK4819_InitAGCSpectrum(ModulationMode_t modulation) {
+    if (modulation == MODULATION_AM) {
+        BK4819_WriteRegister(0x13, 0x0396); // 0x396 IS GOOD
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (48 << 7) | (28 << 0));
+    } 
+    else if (modulation == MODULATION_SSB) {
+        BK4819_WriteRegister(0x13, 0x0396);
+       // BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (32 << 0)); //32 BACK AGC, 31 NO BACK
+	   BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
+    } 
+    else { // FM и остальные
+      //  BK4819_WriteRegister(0x13, 0x3DF);
+       
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
+    }
+
+    // Общие настройки для всех режимов
+   // BK4819_WriteRegister(BK4819_REG_7B, 0x8420); 
+   // BK4819_WriteRegister(BK4819_REG_24, 0); // Отключаем DTMF, чтобы не мешал спектру
 }
+
 
 void BK4819_ToggleGpioOut(BK4819_GPIO_PIN_t Pin, bool bSet)
 {
@@ -633,7 +647,7 @@ void BK4819_SetRegValue(RegisterSpec s, uint16_t v) {
 }
 
 void BK4819_RX_TurnOn(void) {
-  BK4819_WriteRegister(BK4819_REG_37, 0x1F0F);
+  BK4819_WriteRegister(BK4819_REG_37, 0x1D0F);
   BK4819_WriteRegister(BK4819_REG_30, 0x0000);
   SYSTEM_DelayMs(10);
   BK4819_WriteRegister(BK4819_REG_30, 
@@ -819,7 +833,7 @@ void BK4819_ExitTxMute(void)
 void BK4819_Sleep(void)
 {
 	BK4819_WriteRegister(BK4819_REG_30, 0);
-	BK4819_WriteRegister(BK4819_REG_37, 0x1D00);
+	BK4819_WriteRegister(BK4819_REG_37, 0x000F);
 }
 
 void BK4819_TurnsOffTones_TurnsOnRX(void)

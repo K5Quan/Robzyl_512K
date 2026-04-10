@@ -26,9 +26,10 @@ if exist "%INDEX_FILE%" (
     echo ERROR : %INDEX_FILE% not found !
 )
 
-docker build -t uvk5 .
 del .\compiled-firmware\*.bin
-docker run --rm -v %CD%:/app uvk5 /bin/bash -c "make clean && make -j$(nproc) ENABLE_FULL_BAND=1 ENABLE_EEPROM_512K=1 TARGET=robzyl_512k && make -j$(nproc) ENABLE_FULL_BAND=1 ENABLE_EEPROM_512K=0 TARGET=robzyl_8k && cp *.bin ./compiled-firmware/"
+docker build -t uvk5 .
+docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make clean && make -s ENABLE_EEPROM_512K=0 TARGET=robzyl_8k && cp *packed.bin compiled-firmware/"
+docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make -s ENABLE_EEPROM_512K=1 TARGET=robzyl_512k && cp *packed.bin compiled-firmware/"
 
 time /t
 pause

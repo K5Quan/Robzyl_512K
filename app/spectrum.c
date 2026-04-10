@@ -1,4 +1,4 @@
-//K5 Spectrum
+//K5 Spectrum solve
 // ============================================================
 // SECTION: Includes
 // ============================================================
@@ -44,6 +44,12 @@ static volatile uint8_t gRequestedSpectrumState = 0;
 #else
   #define HISTORY_SIZE 200
 #endif
+//ADD
+static char nameOrFreq[16]; // Глобальная переменная для формирования имен/частот
+
+
+
+
 
 static uint8_t cachedValidScanListCount = 0;
 static uint8_t cachedEnabledScanListCount = 0;
@@ -583,7 +589,7 @@ static uint16_t GetStepsCount()
    if (appMode==CHANNEL_MODE)    { 
     return scanChannelsCount; }
   if (appMode==SCAN_RANGE_MODE) {
-     return ((gScanRangeStop - gScanRangeStart))+1 / scanInfo.scanStep;} //add +1
+     return ((gScanRangeStop - gScanRangeStart) / scanInfo.scanStep)+1;} //add +1
   if (appMode==SCAN_BAND_MODE)  {
      return (gScanRangeStop - gScanRangeStart) / scanInfo.scanStep;}
   
@@ -946,6 +952,45 @@ static void FillfreqHistory(bool countHit)
     historyListIndex = 0;
     lastReceivingFreq = f;
 }
+////////////////////////
+static bool GetScanListLabel(uint8_t scanListIndex, char* bufferOut) {
+    char channel_name[13];       // Возвращаем локальный буфер для имени
+    uint16_t first_channel = 0xFFFF; // Возвращаем переменную для номера канала
+    
+    // Поиск первого канала в выбранном списке
+    for (uint16_t ch = 0; ch <= MR_CHANNEL_LAST; ch++) {
+        if (gMR_ChannelAttributes[ch].scanlist == (scanListIndex + 1)) {
+            first_channel = ch;
+            break; 
+        }
+    }
+
+    if (first_channel == 0xFFFF) return false; 
+
+    SETTINGS_FetchChannelName(channel_name, first_channel);
+
+    // nameOrFreq теперь глобальный, его объявлять тут НЕ НУЖНО
+    memset(nameOrFreq, 0, sizeof(nameOrFreq)); 
+
+    if (channel_name[0] == '\0' || (uint8_t)channel_name[0] == 0xFF) {
+        uint32_t freq = gMR_ChannelFrequencyAttributes[first_channel].Frequency;
+        sprintf(nameOrFreq, "%u.%05u", freq / 100000, freq % 100000);
+    } else {
+        strncpy(nameOrFreq, channel_name, 12);
+        nameOrFreq[12] = '\0';
+    }
+
+    bool enabled = settings.scanListEnabled[scanListIndex];
+    sprintf(bufferOut, "%u:%s%s", scanListIndex + 1, nameOrFreq, enabled ? "*" : "");
+
+    return true;
+}
+
+
+
+
+
+////////////////////////
 
 static void ToggleRX(bool on) {
    // if (SPECTRUM_PAUSED || settings.rssiTriggerLevelUp == 50) return;
@@ -1127,7 +1172,7 @@ static void Measure() {
     else if (rssi < previousRssi)
         previousRssi = rssi;
 
-    uint16_t count = GetStepsCount()+1;
+    uint16_t count = GetStepsCount(); // dell +1 //GetStepsCount()+1
     if (count == 0) return;
 
     uint16_t i = scanInfo.i;
@@ -1183,29 +1228,8 @@ sprintf(str,"%d %d %d \r\n", startIndex, j-2, rssiHistory[j-2]);
 }
 
  static void UpdateDBMaxAuto() { //Zoom
-  //  settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -80, 0);
-  //  settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -170, -130);} 
-
-
-  static uint8_t z = 5;
-  int newDbMax;
-    if (scanInfo.rssiMax > 0) {
-        newDbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -70, 0);
-        newDbMax = Rssi2DBm(scanInfo.rssiMax);
-
-        if (newDbMax > settings.dbMax + z) {
-            settings.dbMax = settings.dbMax + z;   // montée limitée
-        } else if (newDbMax < settings.dbMax - z) {
-            settings.dbMax = settings.dbMax - z;   // descente limitée
-        } else {
-            settings.dbMax = newDbMax;              // suivi normal
-        }
-    }
-
-    if (scanInfo.rssiMin > 0) { 
-        settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -170, -130);
-        settings.dbMin = Rssi2DBm(scanInfo.rssiMin);
-    }
+    settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -80, 0);
+    settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -100);
 }
 
 static void AutoAdjustFreqChangeStep() {
@@ -1559,7 +1583,7 @@ static void DrawF(uint32_t f) {
     if (channelName[0] != '\0') {
             snprintf(line2, sizeof(line2), "%s%s ", prefix, channelName);
     } else {
-            snprintf(line2, sizeof(line2), "%s", prefix);
+            snprintf(line2, sizeof(line2), "%s", prefix, nameOrFreq );
         }
     } else {
         line2[0] = '\0';
@@ -1738,80 +1762,16 @@ if (appMode==CHANNEL_MODE)
   
 }
 
-/*
-// back step
-static void nextFrequency833() {
-    if (scanInfo.i % 3 != 1) {
-        scanInfo.f += 833;
-    } else {
-        scanInfo.f += 834;
-    }}
-
-    static void NextScanStep() {
-    spectrumElapsedCount = 0;
-    
-
-    if (appMode==CHANNEL_MODE)
-    { 
-      if (scanChannelsCount == 0) return;
-
-      if (scanInfo.i + 1 >= scanChannelsCount)
-          scanInfo.i = 0;
-      else
-          scanInfo.i++;
-           int currentChannel = scanChannel[scanInfo.i];
-      scanInfo.f =  gMR_ChannelFrequencyAttributes[currentChannel].Frequency;
-        } 
-    else {
-          ++scanInfo.i;
-          if(scanInfo.scanStep==833) nextFrequency833();
-          else scanInfo.f += scanInfo.scanStep;
-          }
-}
-// end back step
-
-*/
-// 
-/*
-static void nextFrequencyinterlaced() {
-    static uint16_t lastStep = 0;
-    static uint16_t jumpSize = 2500;
-    static uint16_t loops = 1;
-    static uint32_t columns = 0;
-
-    // Recalcul des constantes si le pas change
-    if (scanInfo.scanStep != lastStep) {
-        lastStep = scanInfo.scanStep;
-        
-        uint8_t idx = 0;
-        for (uint8_t i = 0; i < sizeof(scanStepValues)/sizeof(scanStepValues[0]); i++) {
-            if (scanStepValues[i] == lastStep) {
-                idx = i;
-                break;
-            }
-        }
-        jumpSize = jumpSizes[idx];
-        loops    = interlacedLoops[idx];
-        columns = (GetStepsCount() + (loops - 1)) / loops;
-        if (columns == 0) columns = 1;
-    }
-    uint32_t currentColumn = scanInfo.i % columns;
-    uint32_t currentPass   = scanInfo.i / columns;
-    scanInfo.f = gScanRangeStart + (currentColumn * jumpSize) + (currentPass * lastStep);
-}
-uint32_t f_linear;
-*/
-
-
 static void NextScanStep() {
     static uint32_t StartF; // Статическая переменная для хранения начала текущего прохода
     spectrumElapsedCount = 0;
 
     if (appMode == CHANNEL_MODE) { 
         if (scanChannelsCount == 0) return;
-        // Увеличиваем индекс канала (только один раз!)
         if (++scanInfo.i >= scanChannelsCount) {
             scanInfo.i = 0;
+            newScanStart = true;
+            UpdateDBMaxAuto();
         }
         scanInfo.f = gMR_ChannelFrequencyAttributes[scanChannel[scanInfo.i]].Frequency;
     } 
@@ -1823,8 +1783,13 @@ static void NextScanStep() {
                 scanInfo.f = StartF;
                 }
             
-    if(++scanInfo.i > GetStepsCount()) scanInfo.i = 0;
-}}
+        if (scanInfo.i > GetStepsCount()) {
+            scanInfo.i = 0;
+            newScanStart = true;
+            UpdateDBMaxAuto();
+        }
+    }
+}
 
 
 // */
@@ -2457,8 +2422,7 @@ RelaunchScan();
             break;
   
      case KEY_6: // next mode
-        NextAppMode(); 
-      
+            NextAppMode(); 
             break;
         case KEY_SIDE1:
             if (SPECTRUM_PAUSED) return;
@@ -2815,7 +2779,6 @@ static void RenderSpectrum()
 {
     if (classic) {
         DrawNums();
-        UpdateDBMaxAuto();
         DrawSpectrum();
 #ifdef ENABLE_SPECTRUM_LINES
  // === ЛИНИИ С ОТСТУПОМ ПО 4 ПИКСЕЛЯ (только линии, тики от края) ===
@@ -3117,21 +3080,20 @@ static void UpdateScan() {
       NextHistoryScanStep();
       return;
   }
-  if (scanInfo.i < GetStepsCount()) {
-    NextScanStep();
-    return;
-  }
-  
-  newScanStart = true; 
-  //Fmax = peak.f;
-  
-  if (SpectrumSleepMs) {
-      BK4819_Sleep();
-      BK4819_ToggleGpioOut(BK4819_GPIO0_PIN28_RX_ENABLE, false);
-      SPECTRUM_PAUSED = true;
-      SpectrumPauseCount = SpectrumSleepMs;
-  }
-}
+  if (scanInfo.i + 1 >= GetStepsCount()) {
+      newScanStart = true;
+      NextScanStep(); // Это сбросит i в 0
+      if (SpectrumSleepMs) {
+          BK4819_Sleep();
+          BK4819_ToggleGpioOut(BK4819_GPIO0_PIN28_RX_ENABLE, false);
+          SPECTRUM_PAUSED = true;
+          SpectrumPauseCount = SpectrumSleepMs;
+      }
+      return; 
+  } else {
+      NextScanStep();
+      return;
+  }}
 
 
 static void UpdateListening(void) { // called every 10ms
@@ -3569,45 +3531,9 @@ SYSTEM_DelayMs(500); // ADD KOLYAN
 // SECTION: List item text helpers
 // ============================================================
 
-static bool GetScanListLabel(uint8_t scanListIndex, char* bufferOut) {
-    ChannelAttributes_t att;
-    char channel_name[12];
-    uint16_t first_channel = 0xFFFF;
-    uint16_t channel_count = 0;
 
-    for (uint16_t ch = MR_CHANNEL_FIRST; ch <= MR_CHANNEL_LAST; ch++) {
-        att = gMR_ChannelAttributes[ch];
-        if (att.scanlist == scanListIndex + 1) {
-            if (first_channel == 0xFFFF) first_channel = ch;
-            channel_count++;
-        }
-    }
-    if (first_channel == 0xFFFF) return false; 
 
-    SETTINGS_FetchChannelName(channel_name, first_channel);
 
-    char nameOrFreq[13];
-    if (channel_name[0] == '\0') {
-        uint32_t freq = gMR_ChannelFrequencyAttributes[first_channel].Frequency;
-        if (freq < 1400000) {
-            return false;
-        }
-
-        sprintf(nameOrFreq, "%u.%05u", freq / 100000, freq % 100000);
-       // RemoveTrailZeros(nameOrFreq);
-    } else {
-        strncpy(nameOrFreq, channel_name, 12);
-        nameOrFreq[12] = '\0';
-    }
-
-    if (settings.scanListEnabled[scanListIndex]) {
-      sprintf(bufferOut, "%d:%-11s*", scanListIndex + 1, nameOrFreq);
-    } else {
-        sprintf(bufferOut, "%d:%-11s", scanListIndex + 1, nameOrFreq);
-    }
-
-    return true;
-}
 
 static void BuildValidScanListIndices() {
     uint8_t ScanListCount = 0;
