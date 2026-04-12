@@ -122,6 +122,13 @@ static uint8_t PttEmission = 0;              // case 16
 //ClearSettings                              // case 18      
 #define PARAMETER_COUNT 19
 ////////////////////////////////////////////////////////////////////
+#ifndef ENABLE_FULL_BAND
+    static uint8_t bandCount;
+    ScanStep channelStep;
+#else 
+    static uint8_t bandCount = MAX_BANDS;
+#endif
+
 static bool gCounthistory = 1;
 static bool SettingsLoaded = false;
 uint8_t  gKeylockCountdown = 0;
@@ -140,8 +147,6 @@ static uint8_t IndexPS = 0;
 static const char *labelsPS[] = {"OFF","200ms","500ms", "1s", "2s", "5s"};
 static const uint16_t PS_Steps[] = {0, 20, 50, 100, 200, 500}; //in 10 ms
 #define PS_STEP_COUNT 5
-
-
 static uint32_t lastReceivingFreq = 0;
 static bool rx = false;
 static bool gIsPeak = false;
@@ -1050,7 +1055,7 @@ static bool InitScan() {
 
     if (appMode == SCAN_BAND_MODE) {
         uint8_t checkedBandCount = 0;
-        while (checkedBandCount < MAX_BANDS) { 
+        while (checkedBandCount < bandCount) { 
             if (settings.bandEnabled[nextBandToScanIndex]) {
                 bl = nextBandToScanIndex; 
                 scanInfo.f = BParams[bl].Startfrequency;
@@ -1059,11 +1064,11 @@ static bool InitScan() {
                 if(BParams[bl].Startfrequency>0) gScanRangeStart = BParams[bl].Startfrequency;
                 if(BParams[bl].Stopfrequency>0)  gScanRangeStop = BParams[bl].Stopfrequency;
                 if (!gForceModulation) settings.modulationType = BParams[bl].modulationType;
-                nextBandToScanIndex = (nextBandToScanIndex + 1) % MAX_BANDS;
+                nextBandToScanIndex = (nextBandToScanIndex + 1) % bandCount;
                 scanInitializedSuccessfully = true;
                 break;
             }
-            nextBandToScanIndex = (nextBandToScanIndex + 1) % MAX_BANDS;
+            nextBandToScanIndex = (nextBandToScanIndex + 1) % bandCount;
             checkedBandCount++;
         }
     } else {
@@ -1693,28 +1698,27 @@ static void LookupChannelInfo() {
   }
 
 static void LookupChannelModulation() {
-	  uint8_t tmp;
-		uint8_t data[8];
-
-		EEPROM_ReadBuffer(ADRESS_FREQ_PARAMS + gChannel * 16 + 8, data, sizeof(data));
-
-		tmp = data[3] >> 4;
-		if (tmp >= MODULATION_UKNOWN)
-			tmp = MODULATION_FM;
-		channelModulation = tmp;
-
-		if (data[4] == 0xFF)
-		{
-			channelBandwidth = BK4819_FILTER_BW_WIDE;
-		}
-		else
-		{
-			const uint8_t d4 = data[4];
-			channelBandwidth = !!((d4 >> 1) & 1u);
-			if(channelBandwidth != BK4819_FILTER_BW_WIDE)
-				channelBandwidth = ((d4 >> 5) & 3u) + 1;
-		}	
-
+    uint8_t tmp;
+	uint8_t data[8];
+	EEPROM_ReadBuffer(ADRESS_FREQ_PARAMS + gChannel * 16 + 8, data, sizeof(data));
+	tmp = data[3] >> 4;
+	if (tmp >= MODULATION_UKNOWN)
+		tmp = MODULATION_FM;
+	channelModulation = tmp;
+	if (data[4] == 0xFF) {channelBandwidth = BK4819_FILTER_BW_WIDE;}
+	else
+	{
+		const uint8_t d4 = data[4];
+		channelBandwidth = !!((d4 >> 1) & 1u);
+		if(channelBandwidth != BK4819_FILTER_BW_WIDE)
+			channelBandwidth = ((d4 >> 5) & 3u) + 1;
+	}	
+#ifndef ENABLE_FULL_BAND
+    tmp = data[6];
+    if (tmp >= S_STEP_N_ELEM)
+        tmp = STEP_12_5kHz;
+    channelStep = tmp;
+#endif
 }
 
 static void UpdateScanListCountsCached(void) {
@@ -1929,11 +1933,11 @@ static void HandleKeyBandList(uint8_t key) {
                 if (bandListSelectedIndex < bandListScrollOffset)
                     bandListScrollOffset = bandListSelectedIndex;
             } else {
-                bandListSelectedIndex = ARRAY_SIZE(BParams) - 1;
+                bandListSelectedIndex = bandCount - 1;
             }
             break;
         case KEY_DOWN:
-            if (bandListSelectedIndex < ARRAY_SIZE(BParams) - 1) {
+            if (bandListSelectedIndex < bandCount - 1) {
                 bandListSelectedIndex++;
                 if (bandListSelectedIndex >= bandListScrollOffset + MAX_VISIBLE_LINES)
                     bandListScrollOffset = bandListSelectedIndex - MAX_VISIBLE_LINES + 1;
@@ -1942,21 +1946,21 @@ static void HandleKeyBandList(uint8_t key) {
             }
             break;
         case KEY_4: /* toggle selected band */
-            if (bandListSelectedIndex < ARRAY_SIZE(BParams)) {
+            if (bandListSelectedIndex < bandCount) {
                 settings.bandEnabled[bandListSelectedIndex] = !settings.bandEnabled[bandListSelectedIndex];
                 nextBandToScanIndex = bandListSelectedIndex;
                 bandListSelectedIndex++;
             }
             break;
         case KEY_5: /* select only this band */
-            if (bandListSelectedIndex < ARRAY_SIZE(BParams)) {
+            if (bandListSelectedIndex < bandCount) {
                 memset(settings.bandEnabled, 0, sizeof(settings.bandEnabled));
                 settings.bandEnabled[bandListSelectedIndex] = true;
                 nextBandToScanIndex = bandListSelectedIndex;
             }
             break;
         case KEY_MENU: /* select only this band and start scanning */
-            if (bandListSelectedIndex < ARRAY_SIZE(BParams)) {
+            if (bandListSelectedIndex < bandCount) {
                 memset(settings.bandEnabled, 0, sizeof(settings.bandEnabled));
                 settings.bandEnabled[bandListSelectedIndex] = true;
                 nextBandToScanIndex = bandListSelectedIndex;
@@ -3221,7 +3225,35 @@ static void Tick() {
     Render();
   }
 }
+#ifndef ENABLE_FULL_BAND
 
+ChannelInfo_t GetChannelFrequency(const uint16_t Channel) {
+    ChannelInfo_t info;
+    EEPROM_ReadBuffer(0x0000 + (uint32_t)Channel * 16, &info, sizeof(info));
+    if (info.frequency == 0xFFFFFFFF) {
+        ChannelInfo_t empty = {0, 0};
+        return empty;
+    }
+    return info;
+}
+
+static void LoadActiveBands(void) {
+    bandCount = 0;
+    for (uint16_t bd = 0; bd < MAX_BANDS; bd++)
+    {
+        gChannel = bd + MR_CHANNEL_LAST;
+        LookupChannelModulation(); //Fill BParams modulation and step
+        BParams[bd].modulationType = channelModulation;
+        BParams[bd].scanStep =  channelStep;
+        ChannelInfo_t freqs = GetChannelFrequency(gChannel);
+        if(!freqs.frequency) return;
+        BParams[bd].Startfrequency = freqs.frequency;
+        BParams[bd].Stopfrequency  = freqs.offset;
+        EEPROM_ReadBuffer(ADRESS_NAMES + (gChannel * 16), BParams[bd].BandName, 10);
+        bandCount++;
+    }
+}
+#endif
 
 void APP_RunSpectrum(uint8_t Spectrum_state)
 {LoadSettings();
@@ -3238,12 +3270,14 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
         if (!Key_1_pressed) LoadSettings();
         appMode = mode;
         ResetModifiers();
-        if (appMode==CHANNEL_MODE) LoadValidMemoryChannels(); //test on
+        if (appMode==CHANNEL_MODE) LoadValidMemoryChannels();
+#ifndef ENABLE_FULL_BAND        
+        if (appMode==SCAN_BAND_MODE) LoadActiveBands();
+#endif
         if (appMode==FREQUENCY_MODE && !Key_1_pressed) {
             currentFreq = gTxVfo->pRX->Frequency;
             gScanRangeStart = currentFreq - (GetBW() >> 1);
             gScanRangeStop  = currentFreq + (GetBW() >> 1);
-            
         }
         Key_1_pressed = 0;
         BackupRegisters();
@@ -3871,12 +3905,10 @@ static void RenderParametersSelect() {
 }
 
 
-#ifdef ENABLE_FULL_BAND
 void RenderBandSelect() {
-    RenderUnifiedList("BANDS:", false, ARRAY_SIZE(BParams), bandListSelectedIndex,
+    RenderUnifiedList("BANDS:", false, bandCount, bandListSelectedIndex,
                       bandListScrollOffset, true, false, GetBandRow);
 }
-#endif
 
 static void RenderHistoryList() {
     uint16_t count = CountValidHistoryItems();

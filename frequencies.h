@@ -68,7 +68,7 @@ typedef enum {
 	STEP_100kHz, 
 	STEP_125kHz, 
 	STEP_250kHz, 
-	STEP_500kHz,
+	STEP_500kHz
 } STEP_Setting_t;
 
 

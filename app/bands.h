@@ -57,6 +57,8 @@ static const bandparameters BParams[MAX_BANDS] = {
     {"ARMY-RU",       30051300, 33000000, S_STEP_5_0kHz,  MODULATION_FM}, // Tactical RU comms
     {"FULL-SCAN",     1400000,  130000000, S_STEP_500kHz, MODULATION_FM}, // Rapid spectrum overview
 }; 
+#else
+static bandparameters BParams[MAX_BANDS];
 #endif
 
 

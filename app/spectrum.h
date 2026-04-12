@@ -90,8 +90,11 @@ static const uint16_t scanStepBWRegValues[] = {
 //     0b0111111100001000, // 12.5
 //     0b0100100001011000, // 6.25
 // };
-
-#define MAX_BANDS 49
+#ifdef ENABLE_FULL_BAND
+  #define MAX_BANDS 49
+#else
+  #define MAX_BANDS 20
+#endif
 
 typedef enum State {
   SPECTRUM,
@@ -134,6 +137,7 @@ typedef enum ScanStep {
   S_STEP_25_0kHz,
   S_STEP_100kHz,
   S_STEP_500kHz,
+  S_STEP_N_ELEM
 } ScanStep;
 
 typedef enum ScanList {
@@ -198,6 +202,11 @@ typedef struct PeakInfo {
   uint32_t f;
   uint16_t i;
 } PeakInfo;
+
+typedef struct ChannelInfo_t {
+    uint32_t frequency;
+    uint32_t offset;
+} __attribute__((packed)) ChannelInfo_t;
 
 void APP_RunSpectrum(uint8_t Spectrum_state);
 //void LookupChannelInfo();
