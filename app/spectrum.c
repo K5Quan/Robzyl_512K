@@ -1,4 +1,4 @@
-//K5 Spectrum solve
+//K5 Spectrum
 // ============================================================
 // SECTION: Includes
 // ============================================================
@@ -1228,8 +1228,8 @@ sprintf(str,"%d %d %d \r\n", startIndex, j-2, rssiHistory[j-2]);
 }
 
  static void UpdateDBMaxAuto() { //Zoom
-    settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -80, 0);
-    settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -100);
+    settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -100, -20);
+    settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -120);
 }
 
 static void AutoAdjustFreqChangeStep() {
@@ -1783,7 +1783,7 @@ static void NextScanStep() {
                 scanInfo.f = StartF;
                 }
             
-        if (scanInfo.i > GetStepsCount()) {
+        if (++scanInfo.i > GetStepsCount()) {
             scanInfo.i = 0;
             newScanStart = true;
             UpdateDBMaxAuto();
@@ -2189,7 +2189,6 @@ static void HandleKeyParameters(uint8_t key) {
             break;
         }
         case KEY_7:
-        EEPROM_WriteBuffer(0x1D00, &Spectrum_state); //add
             SaveSettings();
             break;
         case KEY_EXIT:
@@ -2281,7 +2280,6 @@ static void HandleKeySpectrum(uint8_t key) {
                 WriteHistory();
 #endif
             } else {
-                EEPROM_WriteBuffer(0x1D00, &Spectrum_state); //add
                 SaveSettings();
             }
             break;
@@ -3235,8 +3233,8 @@ void APP_RunSpectrum(uint8_t Spectrum_state)
         else if (Spectrum_state == 2) mode = SCAN_BAND_MODE ;
         else if (Spectrum_state == 1) mode = CHANNEL_MODE ;
         else mode = FREQUENCY_MODE;
-      //SYSTEM_DelayMs(100);
-       // EEPROM_WriteBuffer(0x1D00, &Spectrum_state);
+        SYSTEM_DelayMs(100);
+        EEPROM_WriteBuffer(0x1D00, &Spectrum_state);
         if (!Key_1_pressed) LoadSettings();
         appMode = mode;
         ResetModifiers();
