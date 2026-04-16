@@ -1650,17 +1650,16 @@ static void DrawF(uint32_t f) {
               ArrowLine = 3;
             }
     if (Fmax) 
-      {
-     if(isListening) {
-        snprintf(String, sizeof(String), "%d dBm", Rssi2DBm(scanInfo.rssi));
-        GUI_DisplaySmallest(String, 50, Bottom_print, false, true);
-     }else{
-         // Skanow/s
-        snprintf(String, sizeof(String), "Rate: %u/s", benchRatePerSec);
-     // UI_PrintStringSmall(line, 1, LCD_WIDTH - 1, 2, 0);
-        GUI_DisplaySmallest(String, 42, Bottom_print, false, true);
-      }}
-
+        {
+        const int8_t dBmCorrTable[7] = {-5,-38,-37,-20,-23,-23,-16};
+        if(isListening) {
+            snprintf(String, sizeof(String), "%d dBm", Rssi2DBm(scanInfo.rssi)+dBmCorrTable[FREQUENCY_GetBand(f)]);
+            GUI_DisplaySmallest(String, 50, Bottom_print, false, true);
+        }else{
+            snprintf(String, sizeof(String), "Rate: %u/s", benchRatePerSec);
+            GUI_DisplaySmallest(String, 42, Bottom_print, false, true);
+        }
+        }
     } else { //Not Classic
 
     DrawMeter(4);
