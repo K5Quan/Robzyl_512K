@@ -128,7 +128,12 @@ static uint8_t PttEmission = 0;              // case 16
 #else 
     static uint8_t bandCount = MAX_BANDS;
 #endif
-
+static uint32_t benchTickMs = 0;          // ms akumulowane do odświeżania 1s
+static uint16_t benchStepsThisSec = 0;    // ile kroków skanu w ostatniej sekundzie
+static uint16_t benchRatePerSec = 0;      // wynik: kroków/s
+static uint32_t benchLapMs = 0;           // czas aktualnej pętli (ms)
+static uint32_t benchLastLapMs = 0;       // czas ostatniej pełnej pętli (ms)
+static bool benchLapDone = false; //
 static bool gCounthistory = 1;
 static bool SettingsLoaded = false;
 uint8_t  gKeylockCountdown = 0;
@@ -596,7 +601,7 @@ static uint16_t GetStepsCount()
   if (appMode==SCAN_RANGE_MODE) {
      return ((gScanRangeStop - gScanRangeStart) / scanInfo.scanStep)+1;} //add +1
   if (appMode==SCAN_BAND_MODE)  {
-     return (gScanRangeStop - gScanRangeStart) / scanInfo.scanStep;}
+     return ((gScanRangeStop - gScanRangeStart) / scanInfo.scanStep)+1;}
   
   return 128 >> settings.stepsCount;
 }
@@ -870,28 +875,7 @@ static uint16_t CountValidHistoryItems() {
     return (indexFs > HISTORY_SIZE) ? HISTORY_SIZE : indexFs;
 }
 
-/*static void FillfreqHistory(void)
-{
-    uint32_t f = peak.f;
-    if (f == 0 || f < 1400000 || f > 130000000) return;
-
-    for (uint16_t i = 0; i < indexFs; i++) {
-        if (HFreqs[i] == f) {
-            if (gCounthistory) {
-                if (lastReceivingFreq != f)
-                    HCount[i]++;
-            } else {
-                HCount[i]++;
-            }
-            lastReceivingFreq = f;
-            historyListIndex = i;
-            return;
-        }
-    }
-*/
-
 static void FillfreqHistory(bool countHit)
-
 {
     uint32_t f = peak.f;
     if (f == 0 || f < 1400000 || f > 130000000) return;
@@ -991,10 +975,6 @@ static bool GetScanListLabel(uint8_t scanListIndex, char* bufferOut) {
     return true;
 }
 
-
-
-
-
 ////////////////////////
 
 static void ToggleRX(bool on) {
@@ -1013,7 +993,7 @@ static void ToggleRX(bool on) {
           }
     
     if (on) { 
-        Fmax = peak.f;
+        Fmax = scanInfo.rssi; // NEED TO ACTIVATE
         SYSTEM_DelayMs(20);
         RADIO_SetModulation(settings.modulationType);
         BK4819_SetFilterBandwidth(settings.listenBw, false);
@@ -1023,13 +1003,11 @@ static void ToggleRX(bool on) {
         rx = true;
         SPI0_Init(64);
     } else { 
+        Fmax = benchRatePerSec; // NEED TO ACTIVATE
         rx = false;
-      //BK4819_WriteRegister(BK4819_REG_13, eepromData.R13); 
       BK4819_WriteRegister(BK4819_REG_13, DATA_R13); 
-       // BK4819_WriteRegister(BK4819_REG_13, 0x3DF);
         RADIO_SetModulation(MODULATION_FM); //Test for Kolyan OK
         BK4819_SetFilterBandwidth(BK4819_FILTER_BW_WIDE,false); //Scan in 25K bandwidth
-    //  if(appMode!=CHANNEL_MODE) BK4819_WriteRegister(0x43, GetBWRegValueForScan());
         BK4819_WriteRegister(BK4819_REG_37, 0x0A0F);  //Test for Kolyan
         BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, 0);
         SPI0_Init(2);
@@ -1039,6 +1017,14 @@ static void ToggleRX(bool on) {
         ToggleAFDAC(on);
         ToggleAFBit(on);
     }
+
+}
+static void ResetBenchStats(void) {
+    benchTickMs = 0;
+    benchStepsThisSec = 0;
+    benchRatePerSec = 0;
+    benchLapMs = 0;
+    benchLastLapMs = 0;
 }
 
 static void ResetScanStats() {
@@ -1107,6 +1093,7 @@ static void RelaunchScan() {
     ToggleRX(false);
     scanInfo.rssiMin = RSSI_MAX_VALUE;
     gIsPeak = false;
+    ResetBenchStats();   //
 }
 
 static void UpdateNoiseOff(){
@@ -1155,6 +1142,7 @@ static void Measure() {
             gIsPeak = false;
             isListening = false;
             FillfreqHistory(false);
+            lastReceivingFreq = scanInfo.f;
         }
     } else {
             if (!gIsPeak && rssi > previousRssi + settings.rssiTriggerLevelUp) {
@@ -1233,8 +1221,8 @@ sprintf(str,"%d %d %d \r\n", startIndex, j-2, rssiHistory[j-2]);
 }
 
  static void UpdateDBMaxAuto() { //Zoom
-    settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -100, -20);
-    settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -160, -120);
+    settings.dbMax = clamp(Rssi2DBm(scanInfo.rssiMax), -100, 0);
+    settings.dbMin = clamp(Rssi2DBm(scanInfo.rssiMin), -140, -110);
 }
 
 static void AutoAdjustFreqChangeStep() {
@@ -1252,7 +1240,8 @@ if (inc) {
                           : settings.scanStepIndex - 1;
 }
   AutoAdjustFreqChangeStep();
-  scanInfo.scanStep = settings.scanStepIndex;
+ // scanInfo.scanStep = settings.scanStepIndex;
+ scanInfo.scanStep = scanStepValues[settings.scanStepIndex]; 
 }
 
 static void UpdateCurrentFreq(bool inc) {
@@ -1662,11 +1651,15 @@ static void DrawF(uint32_t f) {
             }
     if (Fmax) 
       {
-          FormatFrequency(Fmax, freqStr, sizeof(freqStr));
-          GUI_DisplaySmallest(freqStr,  50, Bottom_print, false,true);
-          // UI_PrintStringSmall(line3,0, LCD_WIDTH - 1, 3, 0);  // таймеры
-          
-      }
+     if(isListening) {
+        snprintf(String, sizeof(String), "%d dBm", Rssi2DBm(scanInfo.rssi));
+        GUI_DisplaySmallest(String, 50, Bottom_print, false, true);
+     }else{
+         // Skanow/s
+        snprintf(String, sizeof(String), "Rate: %u/s", benchRatePerSec);
+     // UI_PrintStringSmall(line, 1, LCD_WIDTH - 1, 2, 0);
+        GUI_DisplaySmallest(String, 42, Bottom_print, false, true);
+      }}
 
     } else { //Not Classic
 
@@ -1767,36 +1760,55 @@ if (appMode==CHANNEL_MODE)
 }
 
 static void NextScanStep() {
-    static uint32_t StartF; // Статическая переменная для хранения начала текущего прохода
+    static uint32_t StartF; 
     spectrumElapsedCount = 0;
+    benchLapDone = false;
+    benchStepsThisSec++; 
+
+    uint16_t steps = GetStepsCount();
+    uint16_t prevI = scanInfo.i;
 
     if (appMode == CHANNEL_MODE) { 
         if (scanChannelsCount == 0) return;
+
         if (++scanInfo.i >= scanChannelsCount) {
+            scanInfo.i = 0;
+        }
+        
+        if (scanInfo.i < prevI) {   
+            benchLapDone = true;
+            newScanStart = true;
+        }
+        
+        scanInfo.f = gMR_ChannelFrequencyAttributes[scanChannel[scanInfo.i]].Frequency;
+    } 
+    else { // Режим VFO с Interlacing
+        if (scanInfo.i == 0) {
+            scanInfo.f = StartF = gScanRangeStart;
+        }
+
+        if (scanInfo.f < gScanRangeStop) {
+            scanInfo.f += jumpSizes[settings.scanStepIndex];
+        } else {
+            StartF += scanInfo.scanStep;
+            if (StartF >= gScanRangeStart + jumpSizes[settings.scanStepIndex]) {
+                StartF = gScanRangeStart;
+            }
+            scanInfo.f = StartF;
+        }
+            
+        if (++scanInfo.i >= steps) {
             scanInfo.i = 0;
             newScanStart = true;
             UpdateDBMaxAuto();
         }
-        scanInfo.f = gMR_ChannelFrequencyAttributes[scanChannel[scanInfo.i]].Frequency;
-    } 
-    else { // Режим VFO с Interlacing
-        
-            if (scanInfo.i == 0) scanInfo.f = StartF = gScanRangeStart;
-            if (scanInfo.f < gScanRangeStop) scanInfo.f += jumpSizes[settings.scanStepIndex];
-            else {StartF += scanInfo.scanStep;
-                scanInfo.f = StartF;
-                }
-            
-        if (++scanInfo.i > GetStepsCount()) {
-            scanInfo.i = 0;
-            newScanStart = true;
-            UpdateDBMaxAuto();
+
+        if (scanInfo.i < prevI) {
+            benchLapDone = true;
         }
     }
 }
 
-
-// */
 static void SortHistoryByFrequencyAscending(void) {
     uint16_t count = CountValidHistoryItems();
 
@@ -2627,10 +2639,8 @@ case KEY_DOWN:
       case KEY_5:
       case KEY_0:
       case KEY_6:
-     // case KEY_7:
-      break;
+        break;
 
-//ADD KOLYAN
       case KEY_7:
        if (SpectrumMonitor == 2) {
             SaveSettings();    
@@ -2638,7 +2648,6 @@ case KEY_DOWN:
             SettingsLoaded = false;
             LoadSettings();}
             break;
- //ADD KOLYAN
         
 case KEY_SIDE1:
     SpectrumMonitor++;
@@ -3183,6 +3192,16 @@ static void Tick() {
   if (gNextTimeslice_10ms) {
     HandleUserInput();
     gNextTimeslice_10ms = 0;
+     // BENCH: liczenie czasu tylko gdy aktywnie skanujemy (bez nasłuchu/hold/pause)
+    if (!isListening && !SPECTRUM_PAUSED && !SpectrumMonitor && !WaitSpectrum) {
+        benchTickMs += 10;
+        benchLapMs  += 10;
+        if (benchTickMs >= 1000) {
+            benchTickMs -= 1000;
+            benchRatePerSec = benchStepsThisSec;
+            benchStepsThisSec = 0;
+        }
+    }
     if (isListening || SpectrumMonitor || WaitSpectrum) UpdateListening(); 
     if(SpectrumPauseCount) SpectrumPauseCount--;
     if (osdPopupTimer > 0) {

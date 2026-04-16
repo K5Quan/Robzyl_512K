@@ -266,7 +266,7 @@ void BK4819_InitAGC(ModulationMode_t modulation)
 {
 	if (modulation == MODULATION_AM) {
         BK4819_WriteRegister(0x13, 0x396);
-        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (49 << 7) | (20 << 0));
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (49 << 7) | (10 << 0));
     } 
     else if (modulation == MODULATION_SSB) {
         BK4819_WriteRegister(0x13, 0x396);
@@ -286,12 +286,12 @@ void BK4819_InitAGC(ModulationMode_t modulation)
 void BK4819_InitAGCSpectrum(ModulationMode_t modulation) {
     if (modulation == MODULATION_AM) {
         BK4819_WriteRegister(0x13, 0x0396); // 0x396 IS GOOD
-        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (48 << 7) | (28 << 0));
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (47 << 7) | (15 << 0)); //48<<7 is good 
     } 
     else if (modulation == MODULATION_SSB) {
         BK4819_WriteRegister(0x13, 0x0396);
-       // BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (50 << 7) | (32 << 0)); //32 BACK AGC, 31 NO BACK
-	   BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
+        BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (60 << 7) | (32 << 0)); //32 BACK AGC, 31 NO BACK
+	  // BK4819_WriteRegister(BK4819_REG_49, (0 << 14) | (84 << 7) | (66 << 0));
     } 
     else { // FM и остальные
       //  BK4819_WriteRegister(0x13, 0x3DF);

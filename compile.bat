@@ -28,10 +28,10 @@ if exist "%INDEX_FILE%" (
 
 del .\compiled-firmware\*.bin
 docker build -t uvk5 .
-REM docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make clean && make -s ENABLE_EEPROM_512K=0 ENABLE_FULL_BAND=1 TARGET=robzyl_8k && cp *packed.bin compiled-firmware/"
-REM docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make -s               ENABLE_EEPROM_512K=1 ENABLE_FULL_BAND=1 TARGET=robzyl_512k && cp *packed.bin compiled-firmware/"
-REM docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make -s               ENABLE_EEPROM_512K=0 ENABLE_FULL_BAND=0 TARGET=robzyl_8k_Custom_bands && cp *packed.bin compiled-firmware/"
-docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make clean && make -s               ENABLE_EEPROM_512K=0 ENABLE_FULL_BAND=0 TARGET=robzyl_8k_Custom_bands && cp *packed.bin compiled-firmware/"
+docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make clean && make -s ENABLE_EEPROM_512K=0 ENABLE_FULL_BAND=1 TARGET=robzyl_V6.14_8k && cp *packed.bin compiled-firmware/"
+docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make -s               ENABLE_EEPROM_512K=1 ENABLE_FULL_BAND=1 TARGET=robzyl_V6.14_512k && cp *packed.bin compiled-firmware/"
+docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make -s               ENABLE_EEPROM_512K=0 ENABLE_FULL_BAND=0 TARGET=robzyl_V6.14_8k_Custom_bands && cp *packed.bin compiled-firmware/"
+docker run --rm -v %CD%\compiled-firmware:/app/compiled-firmware uvk5 /bin/bash -c "cd /app && make -s               ENABLE_EEPROM_512K=1 ENABLE_FULL_BAND=0 TARGET=robzyl_V6.14_512k_Custom_bands && cp *packed.bin compiled-firmware/"
 
 time /t
 pause
